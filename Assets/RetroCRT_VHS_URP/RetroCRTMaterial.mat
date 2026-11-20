@@ -1,0 +1,59 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: RetroCRTMaterial
+  m_Shader: {fileID: 4800000, guid: b15ac8f0071886544b8c9bcab5b353d8, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _OverlayTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _AberrationAmount: 0.0005
+    - _AnimSpeed: 12
+    - _Brightness: 1.09
+    - _Cols: 1
+    - _FlipX: 0
+    - _FlipY: 0
+    - _GlitchFlashIntensity: 0
+    - _GlitchFlashSpeed: 2
+    - _GlowIntensity: 0.349
+    - _JitterIntensity: 0
+    - _JitterSpeed: 10
+    - _NoiseIntensity: 0.024
+    - _OverlayAlpha: 0.348
+    - _OverlayBlendMode: 0
+    - _PanX: 0
+    - _PanY: 0
+    - _PixelDensity: 550
+    - _Rotation: 0
+    - _Rows: 1
+    - _ScanlineCount: 472.9
+    - _ScanlineIntensity: 0.053
+    - _VignetteIntensity: 0.43
+    - _WaveDistortion: 0
+    - _WaveFrequency: 10
+    - _Zoom: 1
+    m_Colors: []
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1
