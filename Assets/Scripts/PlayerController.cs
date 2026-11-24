@@ -29,10 +29,15 @@ public class PlayerController : MonoBehaviour
     float Invincibility;
     Rigidbody2D rb;
     bool isGrounded;
+    SpriteRenderer spriteRenderer;
+    Animator animator;
+    bool facingRight = true;
 
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
+        spriteRenderer = GetComponent<SpriteRenderer>();
+        animator = GetComponent<Animator>();
         health = MaxHealth;
     }
 
@@ -45,6 +50,18 @@ public class PlayerController : MonoBehaviour
         float h = 0;
         if (Input.GetKey(KeyCode.D)) h = 1;
         if (Input.GetKey(KeyCode.A)) h = -1;
+
+        // Gestione flip dello sprite
+        if (h > 0 && !facingRight)
+        {
+            spriteRenderer.flipX = false;
+            facingRight = true;
+        }
+        else if (h < 0 && facingRight)
+        {
+            spriteRenderer.flipX = true;
+            facingRight = false;
+        }
 
         rb.linearVelocity = new Vector2(h * Speed, rb.linearVelocity.y);
 
@@ -81,6 +98,8 @@ public class PlayerController : MonoBehaviour
             else if (Input.GetKeyDown(KeyCode.UpArrow)) Shoot(Vector2.up);
             else if (Input.GetKeyDown(KeyCode.DownArrow)) Shoot(Vector2.down);
         }
+        animator.SetFloat("Speed", Mathf.Abs(h));
+        animator.SetBool("IsGrounded", isGrounded);
     }
 
     void Shoot(Vector2 dir)
