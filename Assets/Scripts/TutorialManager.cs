@@ -25,12 +25,13 @@ public class TutorialManager : MonoBehaviour
 
     [Tooltip("If empty, the TextMeshPro on this object is used")]
     [SerializeField] TextMeshProUGUI tutorialText;
+    [Tooltip("Steps available from the start are shown in this order. A step that becomes available later (e.g. Shoot after picking up a weapon) is shown first, then the interrupted one comes back")]
     [SerializeField] TutorialStep[] steps;
 
     [Header("Timing")]
     [Tooltip("Fade in / fade out duration in seconds")]
     [SerializeField] float fadeTime = 0.3f;
-    [Tooltip("Pause in seconds between one message and the next")]
+    [Tooltip("Pause in seconds after a completed message, before the next one")]
     [SerializeField] float delayBetween = 0.5f;
 
     // {Jump}  {Move:left}  {Player/ShootUp}
@@ -38,6 +39,11 @@ public class TutorialManager : MonoBehaviour
 
     // azioni già fatte: restano anche dopo una morte o un cambio livello
     static readonly HashSet<TutorialAction> completed = new HashSet<TutorialAction>();
+
+    // messaggi in attesa: il primo è quello mostrato (una pila, i nuovi passano davanti)
+    readonly List<TutorialStep> pending = new List<TutorialStep>();
+    // passi già entrati nella pila almeno una volta
+    readonly HashSet<TutorialStep> unlocked = new HashSet<TutorialStep>();
 
     // da chiamare quando il giocatore compie un'azione: TutorialManager.Notify(TutorialAction.Jump);
     public static void Notify(TutorialAction action)
@@ -76,43 +82,71 @@ public class TutorialManager : MonoBehaviour
 
     IEnumerator Run()
     {
+        bool firstCheck = true;
+        TutorialStep shown = null;
+
         while (true)
         {
-            TutorialStep step = NextStep();
+            UpdatePending(firstCheck);
+            firstCheck = false;
 
-            if (step == null)
+            TutorialStep next = pending.Count > 0 ? pending[0] : null;
+
+            if (next != shown)
             {
-                if (AllDone()) yield break;   // tutorial finito
-                yield return null;            // aspetta che un passo diventi possibile (es. raccogliere l'arma)
-                continue;
+                // cambia messaggio: quello vecchio sparisce (completato o messo da parte), arriva il nuovo
+                if (shown != null)
+                {
+                    bool wasCompleted = completed.Contains(shown.action);
+                    yield return Fade(0f);
+
+                    if (wasCompleted)
+                        yield return new WaitForSecondsRealtime(delayBetween);
+                }
+
+                shown = next;
+
+                if (shown != null)
+                {
+                    tutorialText.text = FormatMessage(shown.message);
+                    yield return Fade(1f);
+                }
+
+                continue;   // ricontrolla subito: durante la dissolvenza può essere cambiato qualcosa
             }
 
-            // mostra il messaggio
-            tutorialText.text = FormatMessage(step.message);
-            yield return Fade(1f);
+            if (shown != null)
+                tutorialText.text = FormatMessage(shown.message);   // si aggiorna se cambi i tasti dalle Opzioni
+            else if (AllDone())
+                yield break;                                         // tutorial finito
 
-            // aspetta che il giocatore compia l'azione
-            while (!completed.Contains(step.action))
-            {
-                tutorialText.text = FormatMessage(step.message);   // si aggiorna se cambi i tasti dalle Opzioni
-                yield return null;
-            }
-
-            // lo fa sparire
-            yield return Fade(0f);
-            yield return new WaitForSecondsRealtime(delayBetween);
+            yield return null;
         }
     }
 
-    // il primo passo non ancora fatto e già possibile
-    TutorialStep NextStep()
+    // aggiorna la pila dei messaggi
+    void UpdatePending(bool firstCheck)
     {
+        // toglie i messaggi delle azioni già fatte
+        pending.RemoveAll(step => completed.Contains(step.action));
+
+        // aggiunge quelli appena diventati possibili
+        List<TutorialStep> newlyAvailable = new List<TutorialStep>();
         foreach (TutorialStep step in steps)
         {
-            if (!completed.Contains(step.action) && IsAvailable(step.action))
-                return step;
+            if (unlocked.Contains(step) || completed.Contains(step.action)) continue;
+            if (!IsAvailable(step.action)) continue;
+
+            unlocked.Add(step);
+            newlyAvailable.Add(step);
         }
-        return null;
+
+        if (newlyAvailable.Count == 0) return;
+
+        if (firstCheck)
+            pending.AddRange(newlyAvailable);          // all'avvio: nell'ordine della lista
+        else
+            pending.InsertRange(0, newlyAvailable);    // dopo: passano davanti a quello mostrato
     }
 
     bool AllDone()

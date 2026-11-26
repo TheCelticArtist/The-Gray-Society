@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -27,7 +28,7 @@ public class PlayerController : MonoBehaviour
 
     [Header("Shooting")]
     [SerializeField] GameObject Bullet;
-    [Tooltip("Seconds between one shot and the next")]
+    [Tooltip("Seconds between one shot and the next (also while holding the shoot key)")]
     [SerializeField] float ShootCooldown = 5;
     [Tooltip("Distance from the player where the bullet spawns")]
     [SerializeField] float SpawnOffset = 0.7f;
@@ -47,6 +48,9 @@ public class PlayerController : MonoBehaviour
     InputAction shootDownAction;
     InputAction shootLeftAction;
     InputAction shootRightAction;
+    InputAction shootDiagonalUpAction;
+    InputAction shootDiagonalDownAction;
+    InputAction shootDiagonalModifierAction;   // tenuto premuto: su/giù sparano in diagonale
     readonly List<InputAction> weaponActions = new List<InputAction>();   // Weapon1, Weapon2, ... (null se mancano)
 
     float nextShootTime;
@@ -56,6 +60,7 @@ public class PlayerController : MonoBehaviour
     float Invincibility;
     Rigidbody2D rb;
     bool isGrounded;
+    public bool isDamaged;
     SpriteRenderer spriteRenderer;
     Animator animator;
     bool facingRight = true;
@@ -94,6 +99,11 @@ public class PlayerController : MonoBehaviour
         shootDownAction = FindAction(actions, "Player/ShootDown");
         shootLeftAction = FindAction(actions, "Player/ShootLeft");
         shootRightAction = FindAction(actions, "Player/ShootRight");
+        shootDiagonalModifierAction = FindAction(actions, "Player/ShootDiagonal");
+
+        // tasti diagonali dedicati: facoltativi, se non ci sono nessun avviso
+        shootDiagonalUpAction = actions.FindAction("Player/ShootDiagonalUp");
+        shootDiagonalDownAction = actions.FindAction("Player/ShootDiagonalDown");
 
         // Weapon1 ... Weapon9: quelle che non esistono restano null e vengono ignorate
         weaponActions.Clear();
@@ -147,7 +157,26 @@ public class PlayerController : MonoBehaviour
             facingRight = false;
         }
 
-        rb.linearVelocity = new Vector2(h * Speed, rb.linearVelocity.y);
+        // piattaforma mobile sotto i piedi: il player si sposta insieme a lei
+        Vector2 platformVelocity = Vector2.zero;
+        if (isGrounded)
+        {
+            foreach (Collider2D hit in groundHits)
+            {
+                Platform platform = hit.GetComponentInParent<Platform>();
+                if (platform != null && platform.IsMoving)
+                {
+                    platformVelocity = platform.Velocity;
+                    break;
+                }
+            }
+        }
+
+        rb.linearVelocity = new Vector2(h * Speed + platformVelocity.x, rb.linearVelocity.y);
+
+        // se la piattaforma scende, il player resta appoggiato invece di "galleggiare"
+        if (platformVelocity.y < 0f && !isJumping && rb.linearVelocity.y > platformVelocity.y)
+            rb.linearVelocity = new Vector2(rb.linearVelocity.x, platformVelocity.y);
 
         if (Pressed(jumpAction) && isGrounded)
         {
@@ -194,14 +223,23 @@ public class PlayerController : MonoBehaviour
         }
 
         // Sparo (solo se l'arma è stata raccolta)
+        // tenendo premuto continua a sparare, un colpo ogni ShootCooldown secondi
         bool hasWeapon = InventoryManager.Instance != null && InventoryManager.Instance.HasWeapon;
 
         if (hasWeapon && Time.time >= nextShootTime)
         {
-            if (Pressed(shootRightAction)) Shoot(Vector2.right);
-            else if (Pressed(shootLeftAction)) Shoot(Vector2.left);
-            else if (Pressed(shootUpAction)) Shoot(Vector2.up);
-            else if (Pressed(shootDownAction)) Shoot(Vector2.down);
+            float forward = facingRight ? 1f : -1f;   // le diagonali sparano verso dove è girato il player
+            bool diagonalModifier = Held(shootDiagonalModifierAction);
+
+            // modificatore (es. Ctrl) + su / giù = diagonale in avanti
+            if (diagonalModifier && Held(shootUpAction)) Shoot(new Vector2(forward, 1f).normalized);
+            else if (diagonalModifier && Held(shootDownAction)) Shoot(new Vector2(forward, -1f).normalized);
+            else if (Held(shootRightAction)) Shoot(Vector2.right);
+            else if (Held(shootLeftAction)) Shoot(Vector2.left);
+            else if (Held(shootUpAction)) Shoot(Vector2.up);
+            else if (Held(shootDownAction)) Shoot(Vector2.down);
+            else if (Held(shootDiagonalUpAction)) Shoot(new Vector2(forward, 1f).normalized);
+            else if (Held(shootDiagonalDownAction)) Shoot(new Vector2(forward, -1f).normalized);
         }
         animator.SetFloat("Speed", Mathf.Abs(h));
         animator.SetBool("IsGrounded", isGrounded);
@@ -224,7 +262,7 @@ public class PlayerController : MonoBehaviour
         TutorialManager.Notify(TutorialAction.Shoot);
     }
 
-    void OnTriggerEnter2D(Collider2D other)
+    public void OnTriggerEnter2D(Collider2D other)
     {
         if (other.CompareTag("Enemy"))
         {
@@ -233,7 +271,7 @@ public class PlayerController : MonoBehaviour
 
         else if (other.CompareTag("Spike"))
         {
-            Damaged(3, true, Sfx.SpikeHit);    // spike: danno immediato, nessuna attesa
+            Damaged(1, true, Sfx.SpikeHit);    // spike: danno immediato, nessuna attesa
         }
 
         else if (other.CompareTag("Exit"))
@@ -242,7 +280,7 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    void Damaged(int damage, bool ignoreInvincibility, Sfx hitSound)
+    public void Damaged(int damage, bool ignoreInvincibility, Sfx hitSound)
     {
         if (!ignoreInvincibility)
         {
@@ -250,7 +288,11 @@ public class PlayerController : MonoBehaviour
             Invincibility = Time.time + InvincibilityTime;
         }
 
+        // dopo il controllo dell'invincibilità: lampeggia solo se il danno arriva davvero
+        isDamaged = true;
+
         health -= damage;
+
         UpdateHealthUI();   // aggiorna le icone nello stesso istante del danno
         AudioManager.Play(hitSound);
         print("Damage taken");

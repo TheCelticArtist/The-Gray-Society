@@ -1,37 +1,40 @@
 fileFormatVersion: 2
-guid: 5e151e76ef4d63441a9374a01b95fe50
+guid: 175ceb4e6075caa4a9ed9c80b64ee9c4
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -1088215464599994226
-    second: LaserGate2_0
+      213: -155731918676150251
+    second: MCspriteDmg_0
   - first:
-      213: -4497126142354167733
-    second: LaserGate2_1
+      213: -1436042077594682226
+    second: MCspriteDmg_1
   - first:
-      213: -6781980091920209065
-    second: LaserGate2_2
+      213: 8835393742572150581
+    second: MCspriteDmg_2
   - first:
-      213: 7595709299421858345
-    second: LaserGate2_3
+      213: 4811113285535916392
+    second: MCspriteDmg_3
   - first:
-      213: -5220798892902787247
-    second: LaserGate2_4
+      213: 4340460138996264010
+    second: MCspriteDmg_4
   - first:
-      213: -2461575975022430249
-    second: LaserGate2_5
+      213: -1391313108780132003
+    second: MCspriteDmg_5
   - first:
-      213: -4061757858516493822
-    second: LaserGate2_6
+      213: -65166074703401886
+    second: MCspriteDmg_6
   - first:
-      213: 2112994377241339674
-    second: LaserGate2_7
+      213: -8020493429929440587
+    second: MCspriteDmg_7
   - first:
-      213: 6089218505383973862
-    second: LaserGate2_8
+      213: 1726423716074132101
+    second: MCspriteDmg_8
   - first:
-      213: 8103294844426328744
-    second: LaserGate2_9
+      213: -5781969232920202855
+    second: MCspriteDmg_9
+  - first:
+      213: -146739548985794539
+    second: MCspriteDmg_10
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -64,7 +67,7 @@ TextureImporter:
   maxTextureSize: 2048
   textureSettings:
     serializedVersion: 2
-    filterMode: 1
+    filterMode: 0
     aniso: 1
     mipBias: 0
     wrapU: 1
@@ -78,7 +81,7 @@ TextureImporter:
   spriteMeshType: 1
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
-  spritePixelsToUnits: 100
+  spritePixelsToUnits: 30
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
@@ -102,7 +105,7 @@ TextureImporter:
     maxTextureSize: 2048
     resizeAlgorithm: 0
     textureFormat: -1
-    textureCompression: 1
+    textureCompression: 0
     compressionQuality: 50
     crunchedCompression: 0
     allowsAlphaSplitting: 0
@@ -153,221 +156,243 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: LaserGate2_0
+      name: MCspriteDmg_0
       rect:
         serializedVersion: 2
-        x: 0
-        y: 191
-        width: 288
-        height: 55
+        x: 2
+        y: 64
+        width: 27
+        height: 32
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: e804e61fcc1e5e0f0800000000000000
-      internalID: -1088215464599994226
+      spriteID: 5183e1325aab6ddf0800000000000000
+      internalID: -155731918676150251
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: LaserGate2_1
+      name: MCspriteDmg_1
       rect:
         serializedVersion: 2
-        x: 0
-        y: 126
-        width: 288
-        height: 56
+        x: 34
+        y: 64
+        width: 27
+        height: 32
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: b486bdea99ff691c0800000000000000
-      internalID: -4497126142354167733
+      spriteID: e8c7472c657221ce0800000000000000
+      internalID: -1436042077594682226
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: LaserGate2_2
+      name: MCspriteDmg_2
       rect:
         serializedVersion: 2
-        x: 0
-        y: 63
-        width: 37
-        height: 55
+        x: 66
+        y: 64
+        width: 27
+        height: 32
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 75b2353f90191e1a0800000000000000
-      internalID: -6781980091920209065
+      spriteID: 53fd8b40ccf9d9a70800000000000000
+      internalID: 8835393742572150581
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: LaserGate2_3
+      name: MCspriteDmg_3
       rect:
         serializedVersion: 2
-        x: 60
-        y: 63
-        width: 73
-        height: 55
+        x: 98
+        y: 64
+        width: 27
+        height: 31
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 92acb213d51696960800000000000000
-      internalID: 7595709299421858345
+      spriteID: 861e786fa0284c240800000000000000
+      internalID: 4811113285535916392
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: LaserGate2_4
+      name: MCspriteDmg_4
       rect:
         serializedVersion: 2
-        x: 156
-        y: 63
-        width: 73
-        height: 55
+        x: 130
+        y: 64
+        width: 27
+        height: 31
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 157d6c0611ffb87b0800000000000000
-      internalID: -5220798892902787247
+      spriteID: a4c6d9aef796c3c30800000000000000
+      internalID: 4340460138996264010
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: LaserGate2_5
+      name: MCspriteDmg_5
       rect:
         serializedVersion: 2
-        x: 252
-        y: 63
-        width: 36
-        height: 55
+        x: 2
+        y: 32
+        width: 27
+        height: 31
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 7d7f62551b9b6ddd0800000000000000
-      internalID: -2461575975022430249
+      spriteID: d59d0db591011bce0800000000000000
+      internalID: -1391313108780132003
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: LaserGate2_6
+      name: MCspriteDmg_6
       rect:
         serializedVersion: 2
-        x: 0
+        x: 34
+        y: 32
+        width: 27
+        height: 30
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 26ca5e1eccb781ff0800000000000000
+      internalID: -65166074703401886
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MCspriteDmg_7
+      rect:
+        serializedVersion: 2
+        x: 66
+        y: 32
+        width: 27
+        height: 30
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5ba83b948bb71b090800000000000000
+      internalID: -8020493429929440587
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MCspriteDmg_8
+      rect:
+        serializedVersion: 2
+        x: 98
+        y: 32
+        width: 27
+        height: 30
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5829868093d75f710800000000000000
+      internalID: 1726423716074132101
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MCspriteDmg_9
+      rect:
+        serializedVersion: 2
+        x: 130
+        y: 32
+        width: 27
+        height: 31
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 991bd89ed9152cfa0800000000000000
+      internalID: -5781969232920202855
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MCspriteDmg_10
+      rect:
+        serializedVersion: 2
+        x: 2
         y: 0
-        width: 14
-        height: 54
+        width: 27
+        height: 31
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 20a197f6fbcb1a7c0800000000000000
-      internalID: -4061757858516493822
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: LaserGate2_7
-      rect:
-        serializedVersion: 2
-        x: 82
-        y: 0
-        width: 28
-        height: 54
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: a172ed3e03dd25d10800000000000000
-      internalID: 2112994377241339674
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: LaserGate2_8
-      rect:
-        serializedVersion: 2
-        x: 178
-        y: 0
-        width: 28
-        height: 54
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 6e39525f7ff318450800000000000000
-      internalID: 6089218505383973862
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: LaserGate2_9
-      rect:
-        serializedVersion: 2
-        x: 274
-        y: 0
-        width: 14
-        height: 54
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 8aa19485abfa47070800000000000000
-      internalID: 8103294844426328744
+      spriteID: 510633c582da6fdf0800000000000000
+      internalID: -146739548985794539
       vertices: []
       indices: 
       edges: []
@@ -376,7 +401,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 
+    spriteID: 8efe08a565ebed54caf6d91cb09ed631
     internalID: 0
     vertices: []
     indices: 
@@ -384,18 +409,21 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     spriteCustomMetadata:
-      entries: []
+      entries:
+      - key: SpriteEditor.SliceSettings
+        value: '{"sliceOnImport":false,"gridCellCount":{"x":1.0,"y":1.0},"gridSpriteSize":{"x":64.0,"y":64.0},"gridSpriteOffset":{"x":0.0,"y":0.0},"gridSpritePadding":{"x":0.0,"y":0.0},"pivot":{"x":0.5,"y":0.5},"pivotPixels":{"x":0.0,"y":0.0},"autoSlicingMethod":0,"spriteAlignment":0,"pivotUnitMode":0,"slicingType":0,"keepEmptyRects":false,"isAlternate":false}'
     nameFileIdTable:
-      LaserGate2_0: -1088215464599994226
-      LaserGate2_1: -4497126142354167733
-      LaserGate2_2: -6781980091920209065
-      LaserGate2_3: 7595709299421858345
-      LaserGate2_4: -5220798892902787247
-      LaserGate2_5: -2461575975022430249
-      LaserGate2_6: -4061757858516493822
-      LaserGate2_7: 2112994377241339674
-      LaserGate2_8: 6089218505383973862
-      LaserGate2_9: 8103294844426328744
+      MCspriteDmg_0: -155731918676150251
+      MCspriteDmg_1: -1436042077594682226
+      MCspriteDmg_10: -146739548985794539
+      MCspriteDmg_2: 8835393742572150581
+      MCspriteDmg_3: 4811113285535916392
+      MCspriteDmg_4: 4340460138996264010
+      MCspriteDmg_5: -1391313108780132003
+      MCspriteDmg_6: -65166074703401886
+      MCspriteDmg_7: -8020493429929440587
+      MCspriteDmg_8: 1726423716074132101
+      MCspriteDmg_9: -5781969232920202855
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

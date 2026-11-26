@@ -8,8 +8,12 @@ public class WeaponPickup : MonoBehaviour
     [SerializeField] Sprite inventoryIcon;
 
     [Header("Bullet")]
-    [Tooltip("Bullet sprite for this weapon. If empty, the Bullet prefab sprite is used")]
+    [Tooltip("Static bullet sprite for this weapon. If empty, the Bullet prefab sprite is used")]
     [SerializeField] Sprite bulletSprite;
+    [Tooltip("Bullet animation frames (e.g. the slices of a sprite sheet, in order). If set, they replace Bullet Sprite")]
+    [SerializeField] Sprite[] bulletAnimation;
+    [Tooltip("Animation speed in frames per second")]
+    [SerializeField, Min(0.1f)] float bulletFrameRate = 12f;
     [Tooltip("Bullet tint. White = original sprite colors")]
     [SerializeField] Color bulletColor = Color.white;
 
@@ -58,6 +62,8 @@ public class WeaponPickup : MonoBehaviour
         WeaponData weapon = new WeaponData
         {
             bulletSprite = bulletSprite,
+            bulletFrames = bulletAnimation,
+            bulletFrameRate = bulletFrameRate,
             bulletColor = bulletColor,
             damage = damage,
             platformEffect = platformEffect

@@ -153,8 +153,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0edde1d0121a8f14f88583e859e76574, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BulletController
-  Speed: 7
+  Speed: 20
   Lifetime: 5
+  spriteAngleOffset: 0
   Direction: {x: 1, y: 0}
 --- !u!50 &-4167918382735355741
 Rigidbody2D:

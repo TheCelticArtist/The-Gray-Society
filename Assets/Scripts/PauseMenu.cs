@@ -30,6 +30,8 @@ public class PauseMenu : MonoBehaviour
     [Tooltip("Build index of the main menu scene")]
     [SerializeField] int menuSceneIndex = 0;
 
+    InputAction pauseAction;   // azione Player/Pause, rimappabile dalle Opzioni (se manca si usa Esc)
+
     void Awake()
     {
         IsPaused = false;
@@ -51,18 +53,35 @@ public class PauseMenu : MonoBehaviour
             optionsPanel.Init();
             optionsPanel.gameObject.SetActive(false);
         }
+
+        // tasto della pausa: l'azione Player/Pause (i tasti salvati li ha già caricati l'OptionsPanel qui sopra)
+        if (InputSystem.actions != null)
+            pauseAction = InputSystem.actions.FindAction("Player/Pause");
+
+        if (pauseAction != null)
+            pauseAction.Enable();
+        else
+            Debug.LogWarning("PauseMenu: action 'Player/Pause' not found in the Input Actions asset, Esc is used instead.");
+    }
+
+    bool PausePressed()
+    {
+        if (pauseAction != null)
+            return pauseAction.WasPressedThisFrame();
+
+        return Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame;
     }
 
     void Update()
     {
-        if (Keyboard.current == null || !Keyboard.current.escapeKey.wasPressedThisFrame) return;
+        if (!PausePressed()) return;
 
         if (!IsPaused)
             Pause();
         else if (inputKeysPanel != null && inputKeysPanel.activeSelf)
-            return;                                   // qui ESC serve ad annullare il cambio tasto
+            return;                                   // nel pannello dei tasti la pausa non fa niente (ESC annulla il cambio tasto)
         else if (optionsPanel != null && optionsPanel.gameObject.activeSelf)
-            CloseOptions();                           // ESC nelle Opzioni = torna alla pausa
+            CloseOptions();                           // tasto pausa nelle Opzioni = torna alla pausa
         else
             Resume();
     }

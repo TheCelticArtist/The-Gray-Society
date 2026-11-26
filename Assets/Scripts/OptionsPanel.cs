@@ -3,6 +3,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.Audio;
 using UnityEngine.Events;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
@@ -29,9 +30,12 @@ public class OptionsPanel : MonoBehaviour
         ("Shoot Down", "Player/ShootDown", ""),
         ("Shoot Left", "Player/ShootLeft", ""),
         ("Shoot Right", "Player/ShootRight", ""),
+        ("Shoot Diagonal (hold)", "Player/ShootDiagonal", ""),
         ("Weapon 1", "Player/Weapon1", ""),
         ("Weapon 2", "Player/Weapon2", ""),
         ("Weapon 3", "Player/Weapon3", ""),
+        ("Weapon 4", "Player/Weapon4", ""),
+        ("Pause", "Player/Pause", ""),
     };
 
     private class KeyRow
@@ -284,7 +288,13 @@ public class OptionsPanel : MonoBehaviour
         action.Disable();
         row.keyLabel.text = "...";
 
+        // mentre si aspetta il nuovo tasto, frecce e Invio non devono muovere né cliccare il menu
+        if (EventSystem.current != null)
+            EventSystem.current.sendNavigationEvents = false;
+
         rebind = action.PerformInteractiveRebinding(row.bindingIndex)
+            .WithControlsHavingToMatchPath("<Keyboard>")   // le righe sono tasti di tastiera/mouse: il gamepad non viene assegnato per sbaglio
+            .WithControlsHavingToMatchPath("<Mouse>")
             .WithControlsExcluding("<Mouse>/position")
             .WithControlsExcluding("<Mouse>/delta")
             .WithCancelingThrough("<Keyboard>/escape")
@@ -300,6 +310,10 @@ public class OptionsPanel : MonoBehaviour
         rebind = null;
         if (wasEnabled)
             action.Enable();
+
+        // la navigazione del menu torna attiva
+        if (EventSystem.current != null)
+            EventSystem.current.sendNavigationEvents = true;
 
         PlayerPrefs.SetString(BindingsKey, inputActions.SaveBindingOverridesAsJson());
         RefreshKeyLabels();

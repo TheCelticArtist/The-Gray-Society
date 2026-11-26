@@ -3,8 +3,13 @@ using UnityEngine;
 // Vita del nemico. Quando arriva a 0: si ferma, cambia sprite e diventa innocuo.
 public class EnemyHealth : MonoBehaviour
 {
-    [SerializeField, Min(1)] int maxHealth = 3;   // ogni nemico può avere la sua
-    [SerializeField] Sprite deadSprite;           // sprite del nemico sconfitto
+    [Tooltip("Health points of this enemy")]
+    [SerializeField, Min(1)] int maxHealth = 3;
+    [Tooltip("Sprite shown when the enemy is defeated")]
+    [SerializeField] Sprite deadSprite;
+
+    // diventa true quando il nemico viene colpito (lo legge il DmgFilter, che lo rimette a false)
+    [HideInInspector] public bool isDamaged;
 
     int health;
     bool isDead;
@@ -21,6 +26,7 @@ public class EnemyHealth : MonoBehaviour
         if (isDead) return;
 
         health -= damage;
+        isDamaged = true;
 
         if (health <= 0)
             Die();
@@ -37,7 +43,7 @@ public class EnemyHealth : MonoBehaviour
                 t.tag = "Untagged";
         }
 
-        // si ferma: spegne gli altri script del nemico (movimento, pattuglia...)
+        // si ferma: spegne gli altri script del nemico (movimento, pattuglia, DmgFilter...)
         foreach (MonoBehaviour script in GetComponentsInChildren<MonoBehaviour>())
         {
             if (script != this)
