@@ -7460,7 +7460,7 @@ GameObject:
   - component: {fileID: 1793742635}
   - component: {fileID: 1793742634}
   m_Layer: 5
-  m_Name: HealthCanvas
+  m_Name: HUDCanvas
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -8358,7 +8358,7 @@ MonoBehaviour:
     action: 0
   - message: press <color=yellow>{Jump}</color> to jump
     action: 1
-  - message: press the <color=yellow>{ShootUp}</color>,  <color=yellow>{ShooDown}</color>, 
+  - message: press the <color=yellow>{ShootUp}</color>,  <color=yellow>{ShootDown}</color>, 
       <color=yellow>{ShootLeft}</color>,  <color=yellow>{ShootRight}</color> to shoot
       in that direction
     action: 2
