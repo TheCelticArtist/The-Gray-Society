@@ -8,6 +8,8 @@ TagManager:
   - EnemyBound
   - Bullet
   - Enemy
+  - Exit
+  - Spike
   layers:
   - Default
   - TransparentFX

@@ -1,26 +1,53 @@
+using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
+using UnityEngine.SocialPlatforms.Impl;
+using UnityEngine.UI;
 
 public class PlayerController : MonoBehaviour
 {
-    [Header("Movimento")]
+    [Header("Movement")]
     [SerializeField] float Speed;
     [SerializeField] float JumpForce;
     [SerializeField] float MaxJumpTime;
 
-    [Header("Salute")]
+    [Header("Health")]
     [SerializeField] int MaxHealth;
     [SerializeField] float InvincibilityTime;
 
-    [Header("Sparo")]
+    [Header("Health UI")]
+    [Tooltip("The first heart icon inside the container: it gets duplicated for every health point")]
+    [SerializeField] Image HealthIconTemplate;
+    [Tooltip("Sprite of a full heart")]
+    [SerializeField] Sprite FullHeartSprite;
+    [Tooltip("Sprite of a lost heart")]
+    [SerializeField] Sprite EmptyHeartSprite;
+
+    [Header("Shooting")]
     [SerializeField] GameObject Bullet;
+    [Tooltip("Seconds between one shot and the next")]
     [SerializeField] float ShootCooldown = 5;
+    [Tooltip("Distance from the player where the bullet spawns")]
     [SerializeField] float SpawnOffset = 0.7f;
 
     [Header("Ground Check")]
-    [SerializeField] Transform groundCheck; 
-    [SerializeField] float groundCheckRadius = 0.2f; 
-    [SerializeField] LayerMask groundLayer; 
+    [SerializeField] Transform groundCheck;
+    [SerializeField] float groundCheckRadius = 0.2f;
+    [SerializeField] LayerMask groundLayer;
+    [SerializeField] GameObject Exit;
+
+    [SerializeField] GameObject HealthIcon;
+
+    // azioni dell'Input System (le stesse che si rimappano dalle Opzioni)
+    InputAction moveAction;
+    InputAction jumpAction;
+    InputAction shootUpAction;
+    InputAction shootDownAction;
+    InputAction shootLeftAction;
+    InputAction shootRightAction;
+    readonly List<InputAction> weaponActions = new List<InputAction>();   // Weapon1, Weapon2, ... (null se mancano)
 
     float nextShootTime;
     bool isJumping;
@@ -32,6 +59,9 @@ public class PlayerController : MonoBehaviour
     SpriteRenderer spriteRenderer;
     Animator animator;
     bool facingRight = true;
+    Image[] healthIcons;
+    ContactFilter2D groundFilter;
+    readonly List<Collider2D> groundHits = new List<Collider2D>();
 
     void Start()
     {
@@ -39,17 +69,71 @@ public class PlayerController : MonoBehaviour
         spriteRenderer = GetComponent<SpriteRenderer>();
         animator = GetComponent<Animator>();
         health = MaxHealth;
+        CreateHealthIcons();
+        UpdateHealthUI();
+
+        // il ground check considera solo i collider solidi: i trigger (es. quello delle piattaforme spente) non contano
+        groundFilter.SetLayerMask(groundLayer);
+        groundFilter.useTriggers = false;
+
+        SetupInput();
     }
 
-    void Update()
-    {   
-        // controlla se il giocatore è sopra una superficie
-        isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer);
+    void SetupInput()
+    {
+        InputActionAsset actions = InputSystem.actions;
+        if (actions == null)
+        {
+            Debug.LogError("PlayerController: Project-wide Input Actions not found (Edit > Project Settings > Input System Package).");
+            return;
+        }
 
-        // Movimenti e Salti
+        moveAction = FindAction(actions, "Player/Move");
+        jumpAction = FindAction(actions, "Player/Jump");
+        shootUpAction = FindAction(actions, "Player/ShootUp");
+        shootDownAction = FindAction(actions, "Player/ShootDown");
+        shootLeftAction = FindAction(actions, "Player/ShootLeft");
+        shootRightAction = FindAction(actions, "Player/ShootRight");
+
+        // Weapon1 ... Weapon9: quelle che non esistono restano null e vengono ignorate
+        weaponActions.Clear();
+        for (int n = 1; n <= 9; n++)
+            weaponActions.Add(actions.FindAction("Player/Weapon" + n));
+
+        actions.FindActionMap("Player")?.Enable();
+    }
+
+    static InputAction FindAction(InputActionAsset actions, string actionName)
+    {
+        InputAction action = actions.FindAction(actionName);
+        if (action == null)
+            Debug.LogWarning("PlayerController: action '" + actionName + "' not found in the Input Actions asset.");
+        return action;
+    }
+
+    static bool Pressed(InputAction action) => action != null && action.WasPressedThisFrame();
+    static bool Held(InputAction action) => action != null && action.IsPressed();
+    static bool Released(InputAction action) => action != null && action.WasReleasedThisFrame();
+
+    void Update()
+    {
+        // in pausa nessun comando (niente salti, spari o cambi arma)
+        if (PauseMenu.IsPaused) return;
+
+        // controlla se il giocatore è sopra una superficie solida
+        isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundFilter, groundHits) > 0;
+
+        // Movimento: solo l'asse orizzontale dell'azione Move, sempre a velocità piena
         float h = 0;
-        if (Input.GetKey(KeyCode.D)) h = 1;
-        if (Input.GetKey(KeyCode.A)) h = -1;
+        if (moveAction != null)
+        {
+            float x = moveAction.ReadValue<Vector2>().x;
+            if (Mathf.Abs(x) > 0.2f)
+                h = Mathf.Sign(x);
+        }
+
+        if (h != 0)
+            TutorialManager.Notify(TutorialAction.Move);
 
         // Gestione flip dello sprite
         if (h > 0 && !facingRight)
@@ -65,15 +149,17 @@ public class PlayerController : MonoBehaviour
 
         rb.linearVelocity = new Vector2(h * Speed, rb.linearVelocity.y);
 
-        if (Input.GetKeyDown(KeyCode.W) && isGrounded)
+        if (Pressed(jumpAction) && isGrounded)
         {
             isJumping = true;
             jumpTimer = 0f;
             rb.linearVelocity = new Vector2(rb.linearVelocity.x, JumpForce);
+            AudioManager.Play(Sfx.Jump);
+            TutorialManager.Notify(TutorialAction.Jump);
         }
 
         // più tempo tieni, più in alto salti
-        if (isJumping && Input.GetKey(KeyCode.W))
+        if (isJumping && Held(jumpAction))
         {
             if (jumpTimer < MaxJumpTime)
             {
@@ -87,16 +173,35 @@ public class PlayerController : MonoBehaviour
         }
 
         // rilascio del tasto del salto
-        if (Input.GetKeyUp(KeyCode.W))
+        if (Released(jumpAction))
             isJumping = false;
 
-        // Sparo
-        if (Time.time >= nextShootTime)
+        // Cambio arma con le azioni Weapon1, Weapon2, ... (solo tra quelle già raccolte)
+        if (InventoryManager.Instance != null)
         {
-            if (Input.GetKeyDown(KeyCode.RightArrow)) Shoot(Vector2.right);
-            else if (Input.GetKeyDown(KeyCode.LeftArrow)) Shoot(Vector2.left);
-            else if (Input.GetKeyDown(KeyCode.UpArrow)) Shoot(Vector2.up);
-            else if (Input.GetKeyDown(KeyCode.DownArrow)) Shoot(Vector2.down);
+            for (int i = 0; i < weaponActions.Count; i++)
+            {
+                if (Pressed(weaponActions[i]))
+                {
+                    WeaponData before = InventoryManager.Instance.CurrentWeapon;
+                    InventoryManager.Instance.SelectSlot(i + 1);
+
+                    // conta per il tutorial solo se l'arma è cambiata davvero
+                    if (InventoryManager.Instance.CurrentWeapon != before)
+                        TutorialManager.Notify(TutorialAction.SwitchWeapon);
+                }
+            }
+        }
+
+        // Sparo (solo se l'arma è stata raccolta)
+        bool hasWeapon = InventoryManager.Instance != null && InventoryManager.Instance.HasWeapon;
+
+        if (hasWeapon && Time.time >= nextShootTime)
+        {
+            if (Pressed(shootRightAction)) Shoot(Vector2.right);
+            else if (Pressed(shootLeftAction)) Shoot(Vector2.left);
+            else if (Pressed(shootUpAction)) Shoot(Vector2.up);
+            else if (Pressed(shootDownAction)) Shoot(Vector2.down);
         }
         animator.SetFloat("Speed", Mathf.Abs(h));
         animator.SetBool("IsGrounded", isGrounded);
@@ -108,26 +213,78 @@ public class PlayerController : MonoBehaviour
 
         Vector3 spawnPos = transform.position + (Vector3)(dir * SpawnOffset);
         GameObject bullet = Instantiate(Bullet, spawnPos, Quaternion.identity);
-        bullet.GetComponent<BulletController>().Direction = dir;
+
+        BulletController bulletController = bullet.GetComponent<BulletController>();
+        bulletController.Direction = dir;
+
+        // aspetto, danno ed effetto sulle piattaforme dell'arma equipaggiata
+        bulletController.SetWeapon(InventoryManager.Instance.CurrentWeapon);
+
+        AudioManager.Play(Sfx.Shoot);
+        TutorialManager.Notify(TutorialAction.Shoot);
     }
 
     void OnTriggerEnter2D(Collider2D other)
     {
         if (other.CompareTag("Enemy"))
-            Damaged(1);
+        {
+            Damaged(2, false, Sfx.EnemyHit);   // nemici: rispettano l'invincibilità
+        }
+
+        else if (other.CompareTag("Spike"))
+        {
+            Damaged(3, true, Sfx.SpikeHit);    // spike: danno immediato, nessuna attesa
+        }
+
+        else if (other.CompareTag("Exit"))
+        {
+            SceneManager.LoadScene(2);
+        }
     }
 
-    void Damaged(int damage)
+    void Damaged(int damage, bool ignoreInvincibility, Sfx hitSound)
     {
-        if (Time.time < Invincibility) return;   // ancora invulnerabile
+        if (!ignoreInvincibility)
+        {
+            if (Time.time < Invincibility) return;   // ancora invulnerabile ai nemici
+            Invincibility = Time.time + InvincibilityTime;
+        }
 
         health -= damage;
-        Invincibility = Time.time + InvincibilityTime;
-        print("Danno Subito");
+        UpdateHealthUI();   // aggiorna le icone nello stesso istante del danno
+        AudioManager.Play(hitSound);
+        print("Damage taken");
         print("HP: " + health);
 
         if (health <= 0)
             SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+    }
+
+    // crea un'icona per ogni vita, duplicando la prima
+    void CreateHealthIcons()
+    {
+        if (HealthIconTemplate == null)
+        {
+            Debug.LogError("PlayerController: the Health Icon Template field is empty!");
+            return;
+        }
+
+        if (MaxHealth <= 0) return;
+
+        healthIcons = new Image[MaxHealth];
+        healthIcons[0] = HealthIconTemplate;
+
+        for (int i = 1; i < MaxHealth; i++)
+            healthIcons[i] = Instantiate(HealthIconTemplate, HealthIconTemplate.transform.parent);
+    }
+
+    // le prime "health" icone sono piene, le altre vuote
+    void UpdateHealthUI()
+    {
+        if (healthIcons == null) return;
+
+        for (int i = 0; i < healthIcons.Length; i++)
+            healthIcons[i].sprite = i < health ? FullHeartSprite : EmptyHeartSprite;
     }
 
     // Opzionale: Per vedere il raggio del sensore nella Scene View mentre lavori

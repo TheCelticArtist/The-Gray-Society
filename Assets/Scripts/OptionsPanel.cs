@@ -14,18 +14,24 @@ public class OptionsPanel : MonoBehaviour
     public class VolumeSlider
     {
         public Slider slider;
-        [Tooltip("Nome del parametro esposto nell'Audio Mixer, es. MusicVolume")]
+        [Tooltip("Name of the parameter exposed in the Audio Mixer, e.g. MusicVolume")]
         public string mixerParameter;
     }
 
     // Tasti rimappabili: nome mostrato, azione in InputSystem_Actions, parte composita (left/right) o vuoto.
+    // Sono gli stessi comandi letti dal PlayerController. Un'azione che non esiste viene saltata.
     private static readonly (string label, string action, string part)[] KeyList =
     {
         ("Move Left", "Player/Move", "left"),
         ("Move Right", "Player/Move", "right"),
         ("Jump", "Player/Jump", ""),
-        ("Interact", "Player/Interact", ""),
-        ("Attack", "Player/Attack", ""),
+        ("Shoot Up", "Player/ShootUp", ""),
+        ("Shoot Down", "Player/ShootDown", ""),
+        ("Shoot Left", "Player/ShootLeft", ""),
+        ("Shoot Right", "Player/ShootRight", ""),
+        ("Weapon 1", "Player/Weapon1", ""),
+        ("Weapon 2", "Player/Weapon2", ""),
+        ("Weapon 3", "Player/Weapon3", ""),
     };
 
     private class KeyRow
@@ -39,17 +45,17 @@ public class OptionsPanel : MonoBehaviour
     private const string VolumeKeyPrefix = "Options_Volume_";
     private const string BindingsKey = "Options_KeyBindings";
 
-    [Header("Risoluzione")]
+    [Header("Resolution")]
     [SerializeField] private TMP_Dropdown resolutionDropdown;
 
     [Header("Gamma")]
     [SerializeField] private Slider gammaSlider;
 
-    [Header("Volumi")]
+    [Header("Volumes")]
     [SerializeField] private AudioMixer mixer;
     [SerializeField] private VolumeSlider[] volumes;
 
-    [Header("Pannello Input Keys (sotto il Canvas, NON dentro OptionsPanel)")]
+    [Header("Input Keys Panel (under the Canvas, NOT inside OptionsPanel)")]
     [SerializeField] private Button inputKeysButton;
     [SerializeField] private GameObject inputKeysPanel;
     [SerializeField] private Button inputKeysBackButton;
@@ -139,7 +145,7 @@ public class OptionsPanel : MonoBehaviour
     {
         if (mixer == null)
         {
-            Debug.LogWarning("OptionsPanel: manca il Mixer, i volumi non funzionano.");
+            Debug.LogWarning("OptionsPanel: the Mixer is missing, volumes won't work.");
             return;
         }
 
@@ -148,23 +154,28 @@ public class OptionsPanel : MonoBehaviour
             VolumeSlider volume = volumes[i];
             if (volume.slider == null || string.IsNullOrEmpty(volume.mixerParameter))
             {
-                Debug.LogWarning($"OptionsPanel: Volumes, elemento {i} incompleto (servono Slider e Mixer Parameter). Lo salto.");
+                Debug.LogWarning($"OptionsPanel: Volumes element {i} is incomplete (it needs a Slider and a Mixer Parameter). Skipping it.");
                 continue;
             }
 
             volume.slider.minValue = 0.0001f;
             volume.slider.maxValue = 1f;
-            volume.slider.SetValueWithoutNotify(PlayerPrefs.GetFloat(VolumeKeyPrefix + volume.mixerParameter, 1f));
-            volume.slider.onValueChanged.AddListener(value => SetVolume(volume.mixerParameter, value));
-            SetVolume(volume.mixerParameter, volume.slider.value);
+            volume.slider.SetValueWithoutNotify(AudioManager.GetSavedVolume(volume.mixerParameter));   // salvato, o il default dell'AudioManager
+            volume.slider.onValueChanged.AddListener(value => SetVolume(volume.mixerParameter, value));   // salva solo quando il giocatore muove lo slider
+            ApplyVolume(volume.mixerParameter, volume.slider.value);                                      // all'avvio applica senza salvare
         }
     }
 
     private void SetVolume(string parameter, float value)
     {
-        if (!mixer.SetFloat(parameter, Mathf.Log10(Mathf.Max(value, 0.0001f)) * 20f))
-            Debug.LogWarning($"OptionsPanel: il parametro '{parameter}' non è esposto nell'Audio Mixer.");
+        ApplyVolume(parameter, value);
         PlayerPrefs.SetFloat(VolumeKeyPrefix + parameter, value);
+    }
+
+    private void ApplyVolume(string parameter, float value)
+    {
+        if (!mixer.SetFloat(parameter, Mathf.Log10(Mathf.Max(value, 0.0001f)) * 20f))
+            Debug.LogWarning($"OptionsPanel: the parameter '{parameter}' is not exposed in the Audio Mixer.");
     }
 
     // ---------------- Pannello Input Keys ----------------
@@ -173,12 +184,12 @@ public class OptionsPanel : MonoBehaviour
     {
         if (inputKeysPanel == null)
         {
-            Debug.LogWarning("OptionsPanel: manca Input Keys Panel.");
+            Debug.LogWarning("OptionsPanel: Input Keys Panel is missing.");
             return;
         }
 
         if (inputKeysPanel.transform.IsChildOf(transform))
-            Debug.LogWarning("OptionsPanel: sposta Input Keys Panel fuori da OptionsPanel (direttamente sotto il Canvas).");
+            Debug.LogWarning("OptionsPanel: move Input Keys Panel out of OptionsPanel (directly under the Canvas).");
 
         inputKeysPanel.SetActive(false);
         if (inputKeysButton != null)
@@ -207,7 +218,7 @@ public class OptionsPanel : MonoBehaviour
         inputActions = InputSystem.actions;
         if (inputActions == null || keysContainer == null)
         {
-            Debug.LogWarning("OptionsPanel: servono Keys Container e le Project-wide Actions " +
+            Debug.LogWarning("OptionsPanel: Keys Container and the Project-wide Actions are required " +
                              "(Edit > Project Settings > Input System Package).");
             return;
         }
@@ -229,7 +240,7 @@ public class OptionsPanel : MonoBehaviour
             InputAction action = inputActions.FindAction(actionName);
             if (action == null)
             {
-                Debug.LogWarning($"OptionsPanel: l'azione '{actionName}' non esiste in InputSystem_Actions.");
+                Debug.LogWarning($"OptionsPanel: the action '{actionName}' does not exist in InputSystem_Actions.");
                 continue;
             }
 
@@ -259,7 +270,7 @@ public class OptionsPanel : MonoBehaviour
                 return i;
         }
 
-        Debug.LogWarning($"OptionsPanel: nessun tasto trovato per '{action.name}' {compositePart}.");
+        Debug.LogWarning($"OptionsPanel: no keyboard key found for '{action.name}' {compositePart}.");
         return -1;
     }
 
@@ -330,6 +341,7 @@ public class OptionsPanel : MonoBehaviour
         Button button = buttonObject.GetComponent<Button>();
         button.targetGraphic = image;
         button.onClick.AddListener(onRebind);
+        ButtonSounds.Register(button);   // suono di click e hover anche sui pulsanti creati da codice
         CreateText(buttonObject.transform, "Rebind", 0f, 1f).color = Color.white;
 
         return keyLabel;

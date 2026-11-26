@@ -1,0 +1,67 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &4701154058515924947
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3534535398383142794}
+  - component: {fileID: 3114943360853443841}
+  m_Layer: 0
+  m_Name: AudioManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3534535398383142794
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4701154058515924947}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -2.86076, y: -3.83477, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &3114943360853443841
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4701154058515924947}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b88483c0e01b3be489caae32a9024aa7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AudioManager
+  mixer: {fileID: 24100000, guid: 72a64aef69517a94bb71f79f11c6dc90, type: 2}
+  musicGroup: {fileID: 4000002274455735574, guid: 72a64aef69517a94bb71f79f11c6dc90, type: 2}
+  sfxGroup: {fileID: 8828429204298035253, guid: 72a64aef69517a94bb71f79f11c6dc90, type: 2}
+  volumes:
+  - parameter: MasterVolume
+    defaultVolume: 0.058
+  - parameter: MusicVolume
+    defaultVolume: 0.284
+  - parameter: SFXVolume
+    defaultVolume: 0.263
+  musicByScene:
+  - {fileID: 0}
+  - {fileID: 8300000, guid: ad01a5fc4a78f62498199a75f715ce24, type: 3}
+  - {fileID: 8300000, guid: ad01a5fc4a78f62498199a75f715ce24, type: 3}
+  buttonClick: {fileID: 8300000, guid: 4ad941d6e8333d6429bfa0f15c8145b8, type: 3}
+  buttonHover: {fileID: 8300000, guid: f8a6062104a2aad4c855bc413a926c9b, type: 3}
+  pickup: {fileID: 8300000, guid: db6cda6710fd6674cb81e88667bab5ea, type: 3}
+  shoot: {fileID: 8300000, guid: fa3c9e8759c39044880eb28e917cfc0b, type: 3}
+  jump: {fileID: 8300000, guid: df66f6521eff6f04b92b90979e939d04, type: 3}
+  enemyHit: {fileID: 8300000, guid: 038079e7dda56034fa5c9b677371aa7f, type: 3}
+  spikeHit: {fileID: 8300000, guid: 038079e7dda56034fa5c9b677371aa7f, type: 3}

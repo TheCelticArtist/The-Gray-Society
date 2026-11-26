@@ -31,13 +31,13 @@ Material:
     m_Floats:
     - _AberrationAmount: 0.0005
     - _AnimSpeed: 12
-    - _Brightness: 1.09
+    - _Brightness: 1.5
     - _Cols: 1
     - _FlipX: 0
     - _FlipY: 0
     - _GlitchFlashIntensity: 0
     - _GlitchFlashSpeed: 2
-    - _GlowIntensity: 0.349
+    - _GlowIntensity: 0.627
     - _JitterIntensity: 0
     - _JitterSpeed: 10
     - _NoiseIntensity: 0.024
@@ -45,11 +45,11 @@ Material:
     - _OverlayBlendMode: 0
     - _PanX: 0
     - _PanY: 0
-    - _PixelDensity: 550
+    - _PixelDensity: 750
     - _Rotation: 0
     - _Rows: 1
     - _ScanlineCount: 472.9
-    - _ScanlineIntensity: 0.053
+    - _ScanlineIntensity: 0.169
     - _VignetteIntensity: 0.43
     - _WaveDistortion: 0
     - _WaveFrequency: 10
