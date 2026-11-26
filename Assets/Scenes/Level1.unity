@@ -8358,7 +8358,7 @@ MonoBehaviour:
     action: 0
   - message: press <color=yellow>{Jump}</color> to jump
     action: 1
-  - message: press the <color=yellow>{ShootUp}</color>,  <color=yellow>{ShootDown}</color>, 
+  - message: press <color=yellow>{ShootUp}</color>,  <color=yellow>{ShootDown}</color>, 
       <color=yellow>{ShootLeft}</color>,  <color=yellow>{ShootRight}</color> to shoot
       in that direction
     action: 2
