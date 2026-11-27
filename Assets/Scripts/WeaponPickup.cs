@@ -23,43 +23,24 @@ public class WeaponPickup : MonoBehaviour
     [Tooltip("What the bullet does when it hits a platform")]
     [SerializeField] PlatformEffect platformEffect = PlatformEffect.None;
 
-    bool pickedUp;                                 // evita che il suono parta due volte nello stesso frame
+    bool pickedUp;
 
     void Start()
     {
-        // se quest'arma è già stata raccolta (es. dopo una morte e il ricaricamento del livello) non ricompare
         if (InventoryManager.Instance != null && InventoryManager.Instance.HasWeaponInSlot(slotNumber))
             Destroy(gameObject);
     }
 
-    // funziona sia con collider Trigger...
-    void OnTriggerEnter2D(Collider2D other)
-    {
-        TryPickUp(other);
-    }
-
-    // ...sia con collider normale
-    void OnCollisionEnter2D(Collision2D collision)
-    {
-        TryPickUp(collision.collider);
-    }
+    void OnTriggerEnter2D(Collider2D other) => TryPickUp(other);
+    void OnCollisionEnter2D(Collision2D collision) => TryPickUp(collision.collider);
 
     void TryPickUp(Collider2D other)
     {
-        if (pickedUp) return;
-
-        // riconosce il player dallo script, anche se il collider è su un oggetto figlio o manca il tag
-        if (other.GetComponentInParent<PlayerController>() == null) return;
-
-        if (InventoryManager.Instance == null)
-        {
-            Debug.LogWarning("WeaponPickup: no InventoryManager in the scene!");
-            return;
-        }
-
+        if (pickedUp || other.GetComponentInParent<PlayerController>() == null || InventoryManager.Instance == null) return;
         pickedUp = true;
 
-        WeaponData weapon = new WeaponData
+        Sprite icon = inventoryIcon != null ? inventoryIcon : GetComponent<SpriteRenderer>().sprite;
+        InventoryManager.Instance.AddWeapon(slotNumber, icon, new WeaponData
         {
             bulletSprite = bulletSprite,
             bulletFrames = bulletAnimation,
@@ -67,12 +48,9 @@ public class WeaponPickup : MonoBehaviour
             bulletColor = bulletColor,
             damage = damage,
             platformEffect = platformEffect
-        };
+        });
 
-        Sprite icon = inventoryIcon != null ? inventoryIcon : GetComponent<SpriteRenderer>().sprite;
-        InventoryManager.Instance.AddWeapon(slotNumber, icon, weapon);
         AudioManager.Play(Sfx.Pickup);
-
         Destroy(gameObject);
     }
 }

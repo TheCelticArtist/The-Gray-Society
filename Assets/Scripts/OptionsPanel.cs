@@ -19,9 +19,7 @@ public class OptionsPanel : MonoBehaviour
         public string mixerParameter;
     }
 
-    // Tasti rimappabili: nome mostrato, azione in InputSystem_Actions, parte composita (left/right) o vuoto.
-    // Sono gli stessi comandi letti dal PlayerController. Un'azione che non esiste viene saltata.
-    private static readonly (string label, string action, string part)[] KeyList =
+    static readonly (string label, string action, string part)[] KeyList =
     {
         ("Move Left", "Player/Move", "left"),
         ("Move Right", "Player/Move", "right"),
@@ -35,44 +33,44 @@ public class OptionsPanel : MonoBehaviour
         ("Weapon 2", "Player/Weapon2", ""),
         ("Weapon 3", "Player/Weapon3", ""),
         ("Weapon 4", "Player/Weapon4", ""),
+        ("Weapon 5", "Player/Weapon5", ""),
         ("Pause", "Player/Pause", ""),
     };
 
-    private class KeyRow
+    class KeyRow
     {
         public InputAction action;
         public int bindingIndex;
         public TMP_Text keyLabel;
     }
 
-    private const string GammaKey = "Options_Gamma";
-    private const string VolumeKeyPrefix = "Options_Volume_";
-    private const string BindingsKey = "Options_KeyBindings";
+    const string GammaKey = "Options_Gamma";
+    const string BindingsKey = "Options_KeyBindings";
 
     [Header("Resolution")]
-    [SerializeField] private TMP_Dropdown resolutionDropdown;
+    [SerializeField] TMP_Dropdown resolutionDropdown;
 
     [Header("Gamma")]
-    [SerializeField] private Slider gammaSlider;
+    [SerializeField] Slider gammaSlider;
 
     [Header("Volumes")]
-    [SerializeField] private AudioMixer mixer;
-    [SerializeField] private VolumeSlider[] volumes;
+    [SerializeField] AudioMixer mixer;
+    [SerializeField] VolumeSlider[] volumes;
 
     [Header("Input Keys Panel (under the Canvas, NOT inside OptionsPanel)")]
-    [SerializeField] private Button inputKeysButton;
-    [SerializeField] private GameObject inputKeysPanel;
-    [SerializeField] private Button inputKeysBackButton;
-    [SerializeField] private RectTransform keysContainer;
-    [SerializeField] private Button resetKeysButton;
-    [SerializeField] private Color keysTextColor = Color.white;
+    [SerializeField] Button inputKeysButton;
+    [SerializeField] GameObject inputKeysPanel;
+    [SerializeField] Button inputKeysBackButton;
+    [SerializeField] RectTransform keysContainer;
+    [SerializeField] Button resetKeysButton;
+    [SerializeField] Color keysTextColor = Color.white;
 
-    private readonly List<Vector2Int> resolutions = new List<Vector2Int>();
-    private InputActionAsset inputActions;
-    private readonly List<KeyRow> keyRows = new List<KeyRow>();
-    private InputActionRebindingExtensions.RebindingOperation rebind;
-    private static Volume gammaVolume;
-    private static LiftGammaGain gammaEffect;
+    readonly List<Vector2Int> resolutions = new List<Vector2Int>();
+    readonly List<KeyRow> keyRows = new List<KeyRow>();
+    InputActionAsset inputActions;
+    InputActionRebindingExtensions.RebindingOperation rebind;
+    static Volume gammaVolume;
+    static LiftGammaGain gammaEffect;
 
     public void Init()
     {
@@ -83,23 +81,17 @@ public class OptionsPanel : MonoBehaviour
         SetupKeys();
     }
 
-    private void OnDisable()
-    {
-        PlayerPrefs.Save();
-    }
+    void OnDisable() => PlayerPrefs.Save();
 
-    private void SetupResolution()
+    void SetupResolution()
     {
         var labels = new List<string>();
         int current = 0;
         foreach (Resolution r in Screen.resolutions)
         {
             var size = new Vector2Int(r.width, r.height);
-            if (resolutions.Contains(size))
-                continue;
-
-            if (size.x == Screen.width && size.y == Screen.height)
-                current = resolutions.Count;
+            if (resolutions.Contains(size)) continue;
+            if (size.x == Screen.width && size.y == Screen.height) current = resolutions.Count;
             resolutions.Add(size);
             labels.Add($"{size.x}x{size.y}");
         }
@@ -109,16 +101,10 @@ public class OptionsPanel : MonoBehaviour
         resolutionDropdown.SetValueWithoutNotify(current);
         resolutionDropdown.RefreshShownValue();
         resolutionDropdown.interactable = resolutions.Count > 0;
-        resolutionDropdown.onValueChanged.AddListener(SetResolution);
+        resolutionDropdown.onValueChanged.AddListener(i => Screen.SetResolution(resolutions[i].x, resolutions[i].y, Screen.fullScreenMode));
     }
 
-    private void SetResolution(int index)
-    {
-        Vector2Int size = resolutions[index];
-        Screen.SetResolution(size.x, size.y, Screen.fullScreenMode);
-    }
-
-    private void SetupGamma()
+    void SetupGamma()
     {
         gammaSlider.minValue = -0.5f;
         gammaSlider.maxValue = 0.5f;
@@ -127,7 +113,7 @@ public class OptionsPanel : MonoBehaviour
         SetGamma(gammaSlider.value);
     }
 
-    private void SetGamma(float value)
+    void SetGamma(float value)
     {
         if (gammaVolume == null)
         {
@@ -145,70 +131,40 @@ public class OptionsPanel : MonoBehaviour
         PlayerPrefs.SetFloat(GammaKey, value);
     }
 
-    private void SetupVolumes()
+    void SetupVolumes()
     {
-        if (mixer == null)
-        {
-            Debug.LogWarning("OptionsPanel: the Mixer is missing, volumes won't work.");
-            return;
-        }
+        if (mixer == null) return;
 
-        for (int i = 0; i < volumes.Length; i++)
+        foreach (VolumeSlider volume in volumes)
         {
-            VolumeSlider volume = volumes[i];
-            if (volume.slider == null || string.IsNullOrEmpty(volume.mixerParameter))
-            {
-                Debug.LogWarning($"OptionsPanel: Volumes element {i} is incomplete (it needs a Slider and a Mixer Parameter). Skipping it.");
-                continue;
-            }
+            if (volume.slider == null || string.IsNullOrEmpty(volume.mixerParameter)) continue;
 
+            string parameter = volume.mixerParameter;
             volume.slider.minValue = 0.0001f;
             volume.slider.maxValue = 1f;
-            volume.slider.SetValueWithoutNotify(AudioManager.GetSavedVolume(volume.mixerParameter));   // salvato, o il default dell'AudioManager
-            volume.slider.onValueChanged.AddListener(value => SetVolume(volume.mixerParameter, value));   // salva solo quando il giocatore muove lo slider
-            ApplyVolume(volume.mixerParameter, volume.slider.value);                                      // all'avvio applica senza salvare
+            volume.slider.SetValueWithoutNotify(AudioManager.GetSavedVolume(parameter));
+
+            volume.slider.onValueChanged.AddListener(value =>
+            {
+                AudioManager.SetMixerVolume(mixer, parameter, value);
+                PlayerPrefs.SetFloat(AudioManager.VolumeKeyPrefix + parameter, value);
+            });
+            AudioManager.SetMixerVolume(mixer, parameter, volume.slider.value);
         }
     }
 
-    private void SetVolume(string parameter, float value)
+    void SetupInputKeysPanel()
     {
-        ApplyVolume(parameter, value);
-        PlayerPrefs.SetFloat(VolumeKeyPrefix + parameter, value);
-    }
-
-    private void ApplyVolume(string parameter, float value)
-    {
-        if (!mixer.SetFloat(parameter, Mathf.Log10(Mathf.Max(value, 0.0001f)) * 20f))
-            Debug.LogWarning($"OptionsPanel: the parameter '{parameter}' is not exposed in the Audio Mixer.");
-    }
-
-    // ---------------- Pannello Input Keys ----------------
-
-    private void SetupInputKeysPanel()
-    {
-        if (inputKeysPanel == null)
-        {
-            Debug.LogWarning("OptionsPanel: Input Keys Panel is missing.");
-            return;
-        }
-
-        if (inputKeysPanel.transform.IsChildOf(transform))
-            Debug.LogWarning("OptionsPanel: move Input Keys Panel out of OptionsPanel (directly under the Canvas).");
+        if (inputKeysPanel == null) return;
 
         inputKeysPanel.SetActive(false);
         if (inputKeysButton != null)
-            inputKeysButton.onClick.AddListener(OpenInputKeys);
+            inputKeysButton.onClick.AddListener(() => { gameObject.SetActive(false); inputKeysPanel.SetActive(true); });
         if (inputKeysBackButton != null)
             inputKeysBackButton.onClick.AddListener(CloseInputKeys);
     }
 
-    private void OpenInputKeys()
-    {
-        gameObject.SetActive(false);
-        inputKeysPanel.SetActive(true);
-    }
-
-    private void CloseInputKeys()
+    void CloseInputKeys()
     {
         rebind?.Cancel();
         PlayerPrefs.Save();
@@ -216,20 +172,13 @@ public class OptionsPanel : MonoBehaviour
         gameObject.SetActive(true);
     }
 
-
-    private void SetupKeys()
+    void SetupKeys()
     {
         inputActions = InputSystem.actions;
-        if (inputActions == null || keysContainer == null)
-        {
-            Debug.LogWarning("OptionsPanel: Keys Container and the Project-wide Actions are required " +
-                             "(Edit > Project Settings > Input System Package).");
-            return;
-        }
+        if (inputActions == null || keysContainer == null) return;
 
         string saved = PlayerPrefs.GetString(BindingsKey, string.Empty);
-        if (!string.IsNullOrEmpty(saved))
-            inputActions.LoadBindingOverridesFromJson(saved);
+        if (!string.IsNullOrEmpty(saved)) inputActions.LoadBindingOverridesFromJson(saved);
 
         if (!keysContainer.TryGetComponent(out VerticalLayoutGroup layout))
             layout = keysContainer.gameObject.AddComponent<VerticalLayoutGroup>();
@@ -242,58 +191,44 @@ public class OptionsPanel : MonoBehaviour
         foreach (var (label, actionName, part) in KeyList)
         {
             InputAction action = inputActions.FindAction(actionName);
-            if (action == null)
-            {
-                Debug.LogWarning($"OptionsPanel: the action '{actionName}' does not exist in InputSystem_Actions.");
-                continue;
-            }
+            if (action == null) continue;
 
             var row = new KeyRow { action = action, bindingIndex = FindKeyboardBinding(action, part) };
             row.keyLabel = CreateKeyRow(label, () => StartRebind(row));
             keyRows.Add(row);
         }
 
-        if (resetKeysButton != null)
-            resetKeysButton.onClick.AddListener(ResetKeys);
+        if (resetKeysButton != null) resetKeysButton.onClick.AddListener(ResetKeys);
         RefreshKeyLabels();
     }
 
-    private static int FindKeyboardBinding(InputAction action, string compositePart)
+    public static int FindKeyboardBinding(InputAction action, string compositePart)
     {
         for (int i = 0; i < action.bindings.Count; i++)
         {
             InputBinding binding = action.bindings[i];
-            bool keyboardOrMouse = binding.path.StartsWith("<Keyboard>") || binding.path.StartsWith("<Mouse>");
-            if (!keyboardOrMouse)
-                continue;
+            if (!binding.path.StartsWith("<Keyboard>") && !binding.path.StartsWith("<Mouse>")) continue;
 
             bool match = string.IsNullOrEmpty(compositePart)
                 ? !binding.isPartOfComposite
                 : binding.isPartOfComposite && string.Equals(binding.name, compositePart, System.StringComparison.OrdinalIgnoreCase);
-            if (match)
-                return i;
+            if (match) return i;
         }
-
-        Debug.LogWarning($"OptionsPanel: no keyboard key found for '{action.name}' {compositePart}.");
         return -1;
     }
 
-    private void StartRebind(KeyRow row)
+    void StartRebind(KeyRow row)
     {
-        if (rebind != null || row.bindingIndex < 0)
-            return;
+        if (rebind != null || row.bindingIndex < 0) return;
 
         InputAction action = row.action;
         bool wasEnabled = action.enabled;
         action.Disable();
         row.keyLabel.text = "...";
-
-        // mentre si aspetta il nuovo tasto, frecce e Invio non devono muovere né cliccare il menu
-        if (EventSystem.current != null)
-            EventSystem.current.sendNavigationEvents = false;
-
+        SetMenuNavigation(false);
+        
         rebind = action.PerformInteractiveRebinding(row.bindingIndex)
-            .WithControlsHavingToMatchPath("<Keyboard>")   // le righe sono tasti di tastiera/mouse: il gamepad non viene assegnato per sbaglio
+            .WithControlsHavingToMatchPath("<Keyboard>")
             .WithControlsHavingToMatchPath("<Mouse>")
             .WithControlsExcluding("<Mouse>/position")
             .WithControlsExcluding("<Mouse>/delta")
@@ -304,41 +239,37 @@ public class OptionsPanel : MonoBehaviour
             .Start();
     }
 
-    private void FinishRebind(InputAction action, bool wasEnabled)
+    void FinishRebind(InputAction action, bool wasEnabled)
     {
         rebind.Dispose();
         rebind = null;
-        if (wasEnabled)
-            action.Enable();
-
-        // la navigazione del menu torna attiva
-        if (EventSystem.current != null)
-            EventSystem.current.sendNavigationEvents = true;
+        if (wasEnabled) action.Enable();
+        SetMenuNavigation(true);
 
         PlayerPrefs.SetString(BindingsKey, inputActions.SaveBindingOverridesAsJson());
         RefreshKeyLabels();
     }
 
-    private void ResetKeys()
+    static void SetMenuNavigation(bool active)
+    {
+        if (EventSystem.current != null) EventSystem.current.sendNavigationEvents = active;
+    }
+
+    void ResetKeys()
     {
         rebind?.Cancel();
-        if (inputActions != null)
-            inputActions.RemoveAllBindingOverrides();
+        if (inputActions != null) inputActions.RemoveAllBindingOverrides();
         PlayerPrefs.DeleteKey(BindingsKey);
         RefreshKeyLabels();
     }
 
-    private void RefreshKeyLabels()
+    void RefreshKeyLabels()
     {
         foreach (KeyRow row in keyRows)
-        {
-            row.keyLabel.text = row.bindingIndex >= 0
-                ? row.action.GetBindingDisplayString(row.bindingIndex)
-                : "?";
-        }
+            row.keyLabel.text = row.bindingIndex >= 0 ? row.action.GetBindingDisplayString(row.bindingIndex) : "?";
     }
 
-    private TMP_Text CreateKeyRow(string label, UnityAction onRebind)
+    TMP_Text CreateKeyRow(string label, UnityAction onRebind)
     {
         var row = new GameObject(label, typeof(RectTransform), typeof(LayoutElement));
         row.transform.SetParent(keysContainer, false);
@@ -355,13 +286,13 @@ public class OptionsPanel : MonoBehaviour
         Button button = buttonObject.GetComponent<Button>();
         button.targetGraphic = image;
         button.onClick.AddListener(onRebind);
-        ButtonSounds.Register(button);   // suono di click e hover anche sui pulsanti creati da codice
+        ButtonSounds.Register(button);
         CreateText(buttonObject.transform, "Rebind", 0f, 1f).color = Color.white;
 
         return keyLabel;
     }
 
-    private TMP_Text CreateText(Transform parent, string text, float xMin, float xMax)
+    TMP_Text CreateText(Transform parent, string text, float xMin, float xMax)
     {
         var textObject = new GameObject(text, typeof(RectTransform), typeof(TextMeshProUGUI));
         textObject.transform.SetParent(parent, false);
@@ -376,7 +307,7 @@ public class OptionsPanel : MonoBehaviour
         return tmp;
     }
 
-    private static void SetHorizontalAnchors(RectTransform rect, float xMin, float xMax)
+    static void SetHorizontalAnchors(RectTransform rect, float xMin, float xMax)
     {
         rect.anchorMin = new Vector2(xMin, 0f);
         rect.anchorMax = new Vector2(xMax, 1f);

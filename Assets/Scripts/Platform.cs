@@ -1,14 +1,12 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
-// Piattaforma che reagisce ai proiettili: ogni arma ha il suo effetto (vedi PlatformEffect in WeaponData.cs).
-// Servono due collider: uno TRIGGER sempre attivo (lo colpiscono i proiettili)
-// e uno SOLIDO disattivato all'inizio (quello su cui il player cammina una volta attivato).
-// Gli effetti si sommano, tranne Allunga e Movimento che si escludono: vale il primo che arriva.
-// Lo sprite è sempre quello dell'ultimo effetto ricevuto.
 public class Platform : MonoBehaviour
 {
     public enum ExtendSide { Both, Left, Right }
+
+    const float ExtendGap = 0.01f;
 
     [Tooltip("The solid collider. If empty, the BoxCollider2D without 'Is Trigger' is used")]
     [SerializeField] BoxCollider2D solidCollider;
@@ -30,12 +28,14 @@ public class Platform : MonoBehaviour
     [Header("Extend Horizontal")]
     [Tooltip("Sprite shown after the Extend effect (empty = keep the current sprite)")]
     [SerializeField] Sprite extendedSprite;
-    [Tooltip("Width multiplier (2 = twice as wide)")]
+    [Tooltip("Width multiplier (2 = twice as wide). The platform stops earlier if another platform is in the way")]
     [SerializeField, Min(1f)] float extendMultiplier = 2f;
     [Tooltip("Which side grows: both, only left or only right")]
     [SerializeField] ExtendSide extendSide = ExtendSide.Both;
     [Tooltip("Seconds the extension takes (0 = instant)")]
     [SerializeField, Min(0f)] float extendDuration = 0.3f;
+    [Tooltip("Besides other platforms, the extension also stops at solid colliders on these layers (e.g. level ground or walls). Nothing = only other platforms")]
+    [SerializeField] LayerMask extraBlockingLayers;
 
     [Header("Move")]
     [Tooltip("Sprite shown after the Move effect (empty = keep the current sprite)")]
@@ -46,71 +46,47 @@ public class Platform : MonoBehaviour
     [SerializeField, Min(0.1f)] float moveDuration = 2f;
 
     SpriteRenderer spriteRenderer;
-    bool isActive;
-    bool isExtended;
+    bool isActive, isExtended;
 
-    // valori iniziali per l'allungamento
+    BoxCollider2D[] boxes;
+    Vector2[] baseBoxSizes, baseBoxOffsets;
     Vector3 baseScale;
     Vector2 baseSpriteSize;
-    BoxCollider2D[] boxes;
-    Vector2[] baseBoxSizes;
-    Vector2[] baseBoxOffsets;
+    readonly List<RaycastHit2D> castHits = new List<RaycastHit2D>();
 
     // movimento
     Rigidbody2D body;
-    Vector2 moveOrigin;
-    Vector2 lastPosition;
+    Vector2 moveOrigin, lastPosition;
     float moveTimer;
 
     public bool IsMoving { get; private set; }
-    public Vector2 Velocity { get; private set; }   // la legge il PlayerController per farsi trasportare
+    public Vector2 Velocity { get; private set; }
 
     void Awake()
     {
         spriteRenderer = GetComponentInChildren<SpriteRenderer>();
-
-        // cerca da solo il collider solido (quello senza Is Trigger)
-        if (solidCollider == null)
-        {
-            foreach (BoxCollider2D box in GetComponents<BoxCollider2D>())
-            {
-                if (!box.isTrigger)
-                {
-                    solidCollider = box;
-                    break;
-                }
-            }
-        }
-
-        if (solidCollider == null)
-            Debug.LogError("Platform '" + name + "': the solid BoxCollider2D (without Is Trigger) is missing!");
-        else if (!startSolid)
-            solidCollider.enabled = false;   // all'inizio la piattaforma non si può calpestare
-        else
-            isActive = true;
-
-        // misure iniziali, servono per l'allungamento
-        baseScale = transform.localScale;
-        if (spriteRenderer != null)
-            baseSpriteSize = spriteRenderer.size;
-
         boxes = GetComponents<BoxCollider2D>();
-        baseBoxSizes = new Vector2[boxes.Length];
-        baseBoxOffsets = new Vector2[boxes.Length];
-        for (int i = 0; i < boxes.Length; i++)
-        {
-            baseBoxSizes[i] = boxes[i].size;
-            baseBoxOffsets[i] = boxes[i].offset;
-        }
+        baseBoxSizes = System.Array.ConvertAll(boxes, box => box.size);
+        baseBoxOffsets = System.Array.ConvertAll(boxes, box => box.offset);
+        baseScale = transform.localScale;
+        if (spriteRenderer != null) baseSpriteSize = spriteRenderer.size;
+
+        if (solidCollider == null) solidCollider = System.Array.Find(boxes, box => !box.isTrigger);
+        if (solidCollider != null && !startSolid) solidCollider.enabled = false;
+        isActive = startSolid;
     }
 
-    // chiamata dal proiettile: ogni arma ha il suo effetto
     public void OnHit(PlatformEffect effect)
     {
         switch (effect)
         {
             case PlatformEffect.Activate:
-                if (canBeActivated) Activate();
+                if (canBeActivated && !isActive && solidCollider != null)
+                {
+                    isActive = true;
+                    solidCollider.enabled = true;
+                    SetSprite(activeSprite);
+                }
                 break;
 
             case PlatformEffect.Destroy:
@@ -118,112 +94,110 @@ public class Platform : MonoBehaviour
                 break;
 
             case PlatformEffect.ExtendHorizontal:
-                // non si allunga se è già allungata o se si sta già muovendo
-                if (canBeExtended && !isExtended && !IsMoving)
-                {
-                    SetSprite(extendedSprite);
-                    StartCoroutine(Extend());
-                }
+                if (canBeExtended && !isExtended && !IsMoving) TryExtend();
                 break;
 
             case PlatformEffect.Move:
-                // non si muove se è già in movimento o se è stata allungata
                 if (canBeMoved && !IsMoving && !isExtended)
                 {
                     SetSprite(movingSprite);
                     StartMoving();
                 }
                 break;
-
-            case PlatformEffect.None:
-            default:
-                break;
         }
     }
 
-    // lo sprite è quello dell'ultimo effetto ricevuto; se l'effetto non ne ha uno, resta quello di prima
     void SetSprite(Sprite sprite)
     {
-        if (sprite != null && spriteRenderer != null)
-            spriteRenderer.sprite = sprite;
+        if (sprite != null && spriteRenderer != null) spriteRenderer.sprite = sprite;
     }
 
-    // ---------------- Attiva ----------------
-
-    void Activate()
+    void WantedGrowth(float width, out float left, out float right)
     {
-        if (isActive || solidCollider == null) return;
-
-        isActive = true;
-        solidCollider.enabled = true;
-        SetSprite(activeSprite);
+        float extra = width * (extendMultiplier - 1f);
+        left = extendSide == ExtendSide.Right ? 0f : extendSide == ExtendSide.Both ? extra * 0.5f : extra;
+        right = extendSide == ExtendSide.Left ? 0f : extendSide == ExtendSide.Both ? extra * 0.5f : extra;
     }
 
-    // ---------------- Allunga in orizzontale ----------------
-
-    IEnumerator Extend()
+    void TryExtend()
     {
+        if (spriteRenderer == null) return;
+
+        Bounds start = spriteRenderer.bounds;
+        WantedGrowth(start.size.x, out float wantLeft, out float wantRight);
+
+        float left = FreeSpace(start, Vector2.left, wantLeft);
+        float right = FreeSpace(start, Vector2.right, wantRight);
+        if (left + right < ExtendGap) return;
+
         isExtended = true;
+        SetSprite(extendedSprite);
+        StartCoroutine(Extend(start.min.x, start.size.x, left, right));
+    }
 
+    float FreeSpace(Bounds bounds, Vector2 direction, float wanted)
+    {
+        if (wanted <= 0f) return 0f;
+
+        Vector2 size = new Vector2(bounds.size.x, bounds.size.y * 0.9f);
+        Physics2D.BoxCast(bounds.center, size, 0f, direction, new ContactFilter2D().NoFilter(), castHits, wanted);
+
+        float free = wanted;
+        foreach (RaycastHit2D hit in castHits)
+            if (IsBlocking(hit.collider)) free = Mathf.Min(free, Mathf.Max(0f, hit.distance - ExtendGap));
+        return free;
+    }
+
+    bool IsBlocking(Collider2D other)
+    {
+        Platform platform = other.GetComponentInParent<Platform>();
+        if (platform != null) return platform != this;
+
+        return !other.isTrigger && (extraBlockingLayers.value & (1 << other.gameObject.layer)) != 0;
+    }
+
+    IEnumerator Extend(float startLeft, float startWidth, float left, float right)
+    {
         float t = 0f;
         while (t < extendDuration)
         {
             t += Time.deltaTime;
-            SetWidthFactor(Mathf.Lerp(1f, extendMultiplier, t / extendDuration));
+            ApplyExtension(startLeft, startWidth, left, right, Mathf.Clamp01(t / extendDuration));
             yield return null;
         }
-
-        SetWidthFactor(extendMultiplier);
+        ApplyExtension(startLeft, startWidth, left, right, 1f);
     }
 
-    void SetWidthFactor(float factor)
+    void ApplyExtension(float startLeft, float startWidth, float left, float right, float progress)
     {
-        if (spriteRenderer == null) return;
-
-        float leftEdge = spriteRenderer.bounds.min.x;
-        float rightEdge = spriteRenderer.bounds.max.x;
+        float factor = (startWidth + (left + right) * progress) / startWidth;
 
         if (spriteRenderer.drawMode != SpriteDrawMode.Simple)
         {
-            // sprite in modalità Tiled/Sliced: si allunga ripetendo lo sprite, senza stirare i pixel
             spriteRenderer.size = new Vector2(baseSpriteSize.x * factor, baseSpriteSize.y);
-
             for (int i = 0; i < boxes.Length; i++)
             {
-                if (boxes[i].autoTiling) continue;   // con Auto Tiling il collider segue da solo lo sprite
+                if (boxes[i].autoTiling) continue;
                 boxes[i].size = new Vector2(baseBoxSizes[i].x * factor, baseBoxSizes[i].y);
                 boxes[i].offset = new Vector2(baseBoxOffsets[i].x * factor, baseBoxOffsets[i].y);
             }
         }
         else
         {
-            // sprite normale: si allunga la scala (i collider la seguono da soli)
             transform.localScale = new Vector3(baseScale.x * factor, baseScale.y, baseScale.z);
         }
 
-        // tiene fermo il bordo opposto al lato che si allunga
-        Bounds bounds = spriteRenderer.bounds;
-        float shift = 0f;
-        if (extendSide == ExtendSide.Right) shift = leftEdge - bounds.min.x;
-        else if (extendSide == ExtendSide.Left) shift = rightEdge - bounds.max.x;
-
-        if (shift != 0f)
-            transform.position += new Vector3(shift, 0f, 0f);
+        float shift = (startLeft - left * progress) - spriteRenderer.bounds.min.x;
+        if (shift != 0f) transform.position += new Vector3(shift, 0f, 0f);
     }
-
-    // ---------------- Movimento ----------------
 
     void StartMoving()
     {
-        // un Rigidbody2D Kinematic serve per spostare bene la piattaforma e trasportare il player
-        if (!TryGetComponent(out body))
-            body = gameObject.AddComponent<Rigidbody2D>();
-
+        if (!TryGetComponent(out body)) body = gameObject.AddComponent<Rigidbody2D>();
         body.bodyType = RigidbodyType2D.Kinematic;
         body.interpolation = RigidbodyInterpolation2D.Interpolate;
 
-        moveOrigin = body.position;
-        lastPosition = body.position;
+        moveOrigin = lastPosition = body.position;
         moveTimer = 0f;
         IsMoving = true;
     }
@@ -232,7 +206,6 @@ public class Platform : MonoBehaviour
     {
         if (!IsMoving) return;
 
-        // avanti e indietro tra il punto di partenza e quello di arrivo, rallentando alle estremità
         moveTimer += Time.fixedDeltaTime;
         float t = Mathf.SmoothStep(0f, 1f, Mathf.PingPong(moveTimer / moveDuration, 1f));
         Vector2 target = moveOrigin + moveOffset * t;
@@ -242,14 +215,24 @@ public class Platform : MonoBehaviour
         lastPosition = target;
     }
 
-    // Scene view: linea gialla dal punto di partenza a quello di arrivo del movimento
     void OnDrawGizmosSelected()
     {
-        if (!canBeMoved || moveOffset == Vector2.zero) return;
+        SpriteRenderer sr = spriteRenderer != null ? spriteRenderer : GetComponentInChildren<SpriteRenderer>();
+        if (canBeExtended && !isExtended && sr != null && extendMultiplier > 1f)
+        {
+            Bounds b = sr.bounds;
+            WantedGrowth(b.size.x, out float left, out float right);
+            Gizmos.color = Color.cyan;
+            Gizmos.DrawWireCube(new Vector3(b.center.x + (right - left) * 0.5f, b.center.y, b.center.z),
+                                new Vector3(b.size.x + left + right, b.size.y, 0f));
+        }
 
-        Vector3 start = Application.isPlaying && IsMoving ? (Vector3)moveOrigin : transform.position;
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawLine(start, start + (Vector3)moveOffset);
-        Gizmos.DrawWireSphere(start + (Vector3)moveOffset, 0.2f);
+        if (canBeMoved && moveOffset != Vector2.zero)
+        {
+            Vector3 start = IsMoving ? (Vector3)moveOrigin : transform.position;
+            Gizmos.color = Color.yellow;
+            Gizmos.DrawLine(start, start + (Vector3)moveOffset);
+            Gizmos.DrawWireSphere(start + (Vector3)moveOffset, 0.2f);
+        }
     }
 }

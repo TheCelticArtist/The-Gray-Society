@@ -2,7 +2,6 @@ using UnityEngine;
 using UnityEngine.Audio;
 using UnityEngine.SceneManagement;
 
-// elenco dei suoni del gioco
 public enum Sfx { Button, Hover, Pickup, Shoot, Jump, EnemyHit, SpikeHit }
 
 public class AudioManager : MonoBehaviour
@@ -16,15 +15,12 @@ public class AudioManager : MonoBehaviour
         [Range(0.0001f, 1f)] public float defaultVolume = 1f;
     }
 
+    public const string VolumeKeyPrefix = "Options_Volume_";
     public static AudioManager Instance { get; private set; }
-
-    const string VolumeKeyPrefix = "Options_Volume_";   // la stessa chiave usata dall'OptionsPanel
 
     [Header("Audio Mixer (the same one used by the Options)")]
     [SerializeField] AudioMixer mixer;
-    [Tooltip("Mixer group for the music")]
     [SerializeField] AudioMixerGroup musicGroup;
-    [Tooltip("Mixer group for the sound effects")]
     [SerializeField] AudioMixerGroup sfxGroup;
 
     [Header("Default Volumes")]
@@ -53,177 +49,103 @@ public class AudioManager : MonoBehaviour
     [SerializeField] AudioClip enemyHit;
     [SerializeField] AudioClip spikeHit;
 
-    AudioSource sfxSource;
-    AudioSource musicSource;
+    AudioSource sfxSource, musicSource;
     bool musicPaused;
-    static bool warned;
 
     void Awake()
     {
-        // se esiste già un AudioManager (portato dalla scena precedente), questo doppione si elimina
-        if (Instance != null && Instance != this)
-        {
-            Destroy(gameObject);
-            return;
-        }
-
+        if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
-        DontDestroyOnLoad(gameObject);   // suoni e musica non si interrompono cambiando scena
+        DontDestroyOnLoad(gameObject);
 
-        // sorgente per gli effetti
-        sfxSource = gameObject.AddComponent<AudioSource>();
-        sfxSource.playOnAwake = false;
-        sfxSource.outputAudioMixerGroup = sfxGroup;
-
-        // sorgente per la musica, separata dagli effetti
-        musicSource = gameObject.AddComponent<AudioSource>();
-        musicSource.playOnAwake = false;
-        musicSource.loop = true;
-        musicSource.outputAudioMixerGroup = musicGroup;
-
-        if (musicGroup == null || sfxGroup == null)
-            Debug.LogWarning("AudioManager: Music Group or Sfx Group is empty, those sounds will ignore the Options volumes.");
-
+        sfxSource = CreateSource(sfxGroup, false);
+        musicSource = CreateSource(musicGroup, true);
         SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    AudioSource CreateSource(AudioMixerGroup group, bool loop)
+    {
+        AudioSource source = gameObject.AddComponent<AudioSource>();
+        source.playOnAwake = false;
+        source.loop = loop;
+        source.outputAudioMixerGroup = group;
+        return source;
     }
 
     void Start()
     {
         if (Instance != this) return;
 
-        ApplySavedVolumes();   // il mixer ignora i volumi impostati in Awake, quindi li applico qui
+        if (mixer != null)
+            foreach (VolumeSetting setting in volumes)
+                if (!string.IsNullOrEmpty(setting.parameter))
+                    SetMixerVolume(mixer, setting.parameter, GetSavedVolume(setting.parameter));
+
         PlayMusicForScene(SceneManager.GetActiveScene().buildIndex);
     }
 
     void OnDestroy()
     {
-        if (Instance == this)
-        {
-            SceneManager.sceneLoaded -= OnSceneLoaded;
-            Instance = null;
-        }
+        if (Instance != this) return;
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+        Instance = null;
     }
 
-    void OnSceneLoaded(Scene scene, LoadSceneMode mode)
-    {
-        PlayMusicForScene(scene.buildIndex);
-    }
-
-    // ---------------- Musica ----------------
+    void OnSceneLoaded(Scene scene, LoadSceneMode mode) => PlayMusicForScene(scene.buildIndex);
 
     void PlayMusicForScene(int sceneIndex)
     {
-        // cambiando scena (es. "Menu principale" dalla pausa) la musica non resta mai in pausa
-        if (musicPaused)
-        {
-            musicPaused = false;
-            musicSource.UnPause();
-        }
+        SetMusicPaused(false);
 
         if (musicByScene == null || sceneIndex < 0 || sceneIndex >= musicByScene.Length) return;
-
         AudioClip clip = musicByScene[sceneIndex];
-
-        // elemento vuoto o stessa musica (es. dopo una morte): continua senza ripartire da capo
         if (clip == null || clip == musicSource.clip) return;
-
         musicSource.clip = clip;
         musicSource.Play();
     }
 
-    // la usa il menu di pausa: ferma la musica dov'è
-    public static void PauseMusic()
+    void SetMusicPaused(bool paused)
     {
-        if (Instance == null || Instance.musicPaused) return;
-
-        Instance.musicSource.Pause();
-        Instance.musicPaused = true;
+        if (musicPaused == paused) return;
+        musicPaused = paused;
+        if (paused) musicSource.Pause();
+        else musicSource.UnPause();
     }
 
-    // la usa il menu di pausa: la musica riparte da dove si era fermata
-    public static void ResumeMusic()
-    {
-        if (Instance == null || !Instance.musicPaused) return;
+    public static void PauseMusic() { if (Instance != null) Instance.SetMusicPaused(true); }
+    public static void ResumeMusic() { if (Instance != null) Instance.SetMusicPaused(false); }
 
-        Instance.musicSource.UnPause();
-        Instance.musicPaused = false;
-    }
-
-    // ---------------- Volumi ----------------
-
-    // volume salvato dal giocatore, oppure quello di default se non l'ha mai cambiato (lo usa anche l'OptionsPanel)
     public static float GetSavedVolume(string parameter)
     {
-        return PlayerPrefs.GetFloat(VolumeKeyPrefix + parameter, GetDefaultVolume(parameter));
-    }
-
-    static float GetDefaultVolume(string parameter)
-    {
-        // funziona anche se l'AudioManager non ha ancora eseguito Awake
-        AudioManager manager = Instance != null ? Instance : FindFirstObjectByType<AudioManager>();
-
+        AudioManager manager = Instance != null ? Instance : FindAnyObjectByType<AudioManager>();
+        float defaultVolume = 1f;
         if (manager != null)
-        {
             foreach (VolumeSetting setting in manager.volumes)
-            {
-                if (setting.parameter == parameter)
-                    return setting.defaultVolume;
-            }
-        }
+                if (setting.parameter == parameter) { defaultVolume = setting.defaultVolume; break; }
 
-        return 1f;
+        return PlayerPrefs.GetFloat(VolumeKeyPrefix + parameter, defaultVolume);
     }
 
-    void ApplySavedVolumes()
+    public static void SetMixerVolume(AudioMixer mixer, string parameter, float value)
     {
-        if (mixer == null)
-        {
-            Debug.LogWarning("AudioManager: the Mixer is missing, saved volumes are not applied.");
-            return;
-        }
-
-        foreach (VolumeSetting setting in volumes)
-        {
-            if (string.IsNullOrEmpty(setting.parameter)) continue;
-
-            float value = GetSavedVolume(setting.parameter);
-            if (!mixer.SetFloat(setting.parameter, Mathf.Log10(Mathf.Max(value, 0.0001f)) * 20f))
-                Debug.LogWarning("AudioManager: the parameter '" + setting.parameter + "' is not exposed in the Audio Mixer.");
-        }
+        mixer.SetFloat(parameter, Mathf.Log10(Mathf.Max(value, 0.0001f)) * 20f);
     }
 
-    // ---------------- Effetti ----------------
-
-    // da qualsiasi script: AudioManager.Play(Sfx.Jump);
     public static void Play(Sfx sfx)
     {
-        if (Instance == null)
-        {
-            if (!warned)
-            {
-                Debug.LogWarning("AudioManager: no AudioManager in the scene, sounds are not played.");
-                warned = true;
-            }
-            return;
-        }
+        if (Instance == null) return;
 
-        AudioClip clip = Instance.GetClip(sfx);
-        if (clip != null)
-            Instance.sfxSource.PlayOneShot(clip);
-    }
-
-    AudioClip GetClip(Sfx sfx)
-    {
-        switch (sfx)
+        AudioClip clip = sfx switch
         {
-            case Sfx.Button: return buttonClick;
-            case Sfx.Hover: return buttonHover;
-            case Sfx.Pickup: return pickup;
-            case Sfx.Shoot: return shoot;
-            case Sfx.Jump: return jump;
-            case Sfx.EnemyHit: return enemyHit;
-            case Sfx.SpikeHit: return spikeHit;
-        }
-        return null;
+            Sfx.Button => Instance.buttonClick,
+            Sfx.Hover => Instance.buttonHover,
+            Sfx.Pickup => Instance.pickup,
+            Sfx.Shoot => Instance.shoot,
+            Sfx.Jump => Instance.jump,
+            Sfx.EnemyHit => Instance.enemyHit,
+            Sfx.SpikeHit => Instance.spikeHit,
+            _ => null
+        };
+        if (clip != null) Instance.sfxSource.PlayOneShot(clip);
     }
 }

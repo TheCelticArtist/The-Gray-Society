@@ -1,10 +1,7 @@
-using System;
 using System.Collections.Generic;
-using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
-using UnityEngine.SocialPlatforms.Impl;
 using UnityEngine.UI;
 
 public class PlayerController : MonoBehaviour
@@ -21,9 +18,7 @@ public class PlayerController : MonoBehaviour
     [Header("Health UI")]
     [Tooltip("The first heart icon inside the container: it gets duplicated for every health point")]
     [SerializeField] Image HealthIconTemplate;
-    [Tooltip("Sprite of a full heart")]
     [SerializeField] Sprite FullHeartSprite;
-    [Tooltip("Sprite of a lost heart")]
     [SerializeField] Sprite EmptyHeartSprite;
 
     [Header("Shooting")]
@@ -37,36 +32,22 @@ public class PlayerController : MonoBehaviour
     [SerializeField] Transform groundCheck;
     [SerializeField] float groundCheckRadius = 0.2f;
     [SerializeField] LayerMask groundLayer;
-    [SerializeField] GameObject Exit;
 
-    [SerializeField] GameObject HealthIcon;
-
-    // azioni dell'Input System (le stesse che si rimappano dalle Opzioni)
-    InputAction moveAction;
-    InputAction jumpAction;
-    InputAction shootUpAction;
-    InputAction shootDownAction;
-    InputAction shootLeftAction;
-    InputAction shootRightAction;
-    InputAction shootDiagonalUpAction;
-    InputAction shootDiagonalDownAction;
-    InputAction shootDiagonalModifierAction;   // tenuto premuto: su/giù sparano in diagonale
-    readonly List<InputAction> weaponActions = new List<InputAction>();   // Weapon1, Weapon2, ... (null se mancano)
-
-    float nextShootTime;
-    bool isJumping;
-    float jumpTimer;
-    int health;
-    float Invincibility;
-    Rigidbody2D rb;
-    bool isGrounded;
     public bool isDamaged;
+
+    InputAction move, jump, shootUp, shootDown, shootLeft, shootRight, shootDiagonal, shootDiagonalUp, shootDiagonalDown;
+    readonly InputAction[] weaponKeys = new InputAction[9];
+
+    Rigidbody2D rb;
     SpriteRenderer spriteRenderer;
     Animator animator;
-    bool facingRight = true;
     Image[] healthIcons;
     ContactFilter2D groundFilter;
     readonly List<Collider2D> groundHits = new List<Collider2D>();
+
+    int health;
+    float invincibleUntil, nextShootTime, jumpTimer;
+    bool isJumping, isGrounded, facingRight = true;
 
     void Start()
     {
@@ -77,108 +58,49 @@ public class PlayerController : MonoBehaviour
         CreateHealthIcons();
         UpdateHealthUI();
 
-        // il ground check considera solo i collider solidi: i trigger (es. quello delle piattaforme spente) non contano
         groundFilter.SetLayerMask(groundLayer);
         groundFilter.useTriggers = false;
 
-        SetupInput();
-    }
-
-    void SetupInput()
-    {
         InputActionAsset actions = InputSystem.actions;
-        if (actions == null)
-        {
-            Debug.LogError("PlayerController: Project-wide Input Actions not found (Edit > Project Settings > Input System Package).");
-            return;
-        }
+        if (actions == null) return;
 
-        moveAction = FindAction(actions, "Player/Move");
-        jumpAction = FindAction(actions, "Player/Jump");
-        shootUpAction = FindAction(actions, "Player/ShootUp");
-        shootDownAction = FindAction(actions, "Player/ShootDown");
-        shootLeftAction = FindAction(actions, "Player/ShootLeft");
-        shootRightAction = FindAction(actions, "Player/ShootRight");
-        shootDiagonalModifierAction = FindAction(actions, "Player/ShootDiagonal");
-
-        // tasti diagonali dedicati: facoltativi, se non ci sono nessun avviso
-        shootDiagonalUpAction = actions.FindAction("Player/ShootDiagonalUp");
-        shootDiagonalDownAction = actions.FindAction("Player/ShootDiagonalDown");
-
-        // Weapon1 ... Weapon9: quelle che non esistono restano null e vengono ignorate
-        weaponActions.Clear();
-        for (int n = 1; n <= 9; n++)
-            weaponActions.Add(actions.FindAction("Player/Weapon" + n));
+        InputAction Find(string name) => actions.FindAction("Player/" + name);
+        move = Find("Move");
+        jump = Find("Jump");
+        shootUp = Find("ShootUp");
+        shootDown = Find("ShootDown");
+        shootLeft = Find("ShootLeft");
+        shootRight = Find("ShootRight");
+        shootDiagonal = Find("ShootDiagonal");
+        shootDiagonalUp = Find("ShootDiagonalUp");
+        shootDiagonalDown = Find("ShootDiagonalDown");
+        for (int i = 0; i < weaponKeys.Length; i++)
+            weaponKeys[i] = Find("Weapon" + (i + 1));
 
         actions.FindActionMap("Player")?.Enable();
     }
 
-    static InputAction FindAction(InputActionAsset actions, string actionName)
-    {
-        InputAction action = actions.FindAction(actionName);
-        if (action == null)
-            Debug.LogWarning("PlayerController: action '" + actionName + "' not found in the Input Actions asset.");
-        return action;
-    }
-
-    static bool Pressed(InputAction action) => action != null && action.WasPressedThisFrame();
-    static bool Held(InputAction action) => action != null && action.IsPressed();
-    static bool Released(InputAction action) => action != null && action.WasReleasedThisFrame();
-
     void Update()
     {
-        // in pausa nessun comando (niente salti, spari o cambi arma)
         if (PauseMenu.IsPaused) return;
 
-        // controlla se il giocatore è sopra una superficie solida
         isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundFilter, groundHits) > 0;
 
-        // Movimento: solo l'asse orizzontale dell'azione Move, sempre a velocità piena
-        float h = 0;
-        if (moveAction != null)
-        {
-            float x = moveAction.ReadValue<Vector2>().x;
-            if (Mathf.Abs(x) > 0.2f)
-                h = Mathf.Sign(x);
-        }
-
+        float x = move != null ? move.ReadValue<Vector2>().x : 0f;
+        float h = Mathf.Abs(x) > 0.2f ? Mathf.Sign(x) : 0f;
         if (h != 0)
+        {
+            facingRight = h > 0;
+            spriteRenderer.flipX = !facingRight;
             TutorialManager.Notify(TutorialAction.Move);
-
-        // Gestione flip dello sprite
-        if (h > 0 && !facingRight)
-        {
-            spriteRenderer.flipX = false;
-            facingRight = true;
-        }
-        else if (h < 0 && facingRight)
-        {
-            spriteRenderer.flipX = true;
-            facingRight = false;
         }
 
-        // piattaforma mobile sotto i piedi: il player si sposta insieme a lei
-        Vector2 platformVelocity = Vector2.zero;
-        if (isGrounded)
-        {
-            foreach (Collider2D hit in groundHits)
-            {
-                Platform platform = hit.GetComponentInParent<Platform>();
-                if (platform != null && platform.IsMoving)
-                {
-                    platformVelocity = platform.Velocity;
-                    break;
-                }
-            }
-        }
-
+        Vector2 platformVelocity = GroundPlatformVelocity();
         rb.linearVelocity = new Vector2(h * Speed + platformVelocity.x, rb.linearVelocity.y);
-
-        // se la piattaforma scende, il player resta appoggiato invece di "galleggiare"
         if (platformVelocity.y < 0f && !isJumping && rb.linearVelocity.y > platformVelocity.y)
             rb.linearVelocity = new Vector2(rb.linearVelocity.x, platformVelocity.y);
 
-        if (Pressed(jumpAction) && isGrounded)
+        if (Pressed(jump) && isGrounded)
         {
             isJumping = true;
             jumpTimer = 0f;
@@ -186,77 +108,76 @@ public class PlayerController : MonoBehaviour
             AudioManager.Play(Sfx.Jump);
             TutorialManager.Notify(TutorialAction.Jump);
         }
-
-        // più tempo tieni, più in alto salti
-        if (isJumping && Held(jumpAction))
+        if (isJumping && Held(jump))
         {
             if (jumpTimer < MaxJumpTime)
             {
                 rb.linearVelocity = new Vector2(rb.linearVelocity.x, JumpForce);
                 jumpTimer += Time.deltaTime;
             }
-            else
+            else isJumping = false;
+        }
+        if (Released(jump)) isJumping = false;
+
+        InventoryManager inventory = InventoryManager.Instance;
+        if (inventory != null)
+        {
+            for (int i = 0; i < weaponKeys.Length; i++)
             {
-                isJumping = false;
+                if (!Pressed(weaponKeys[i])) continue;
+                WeaponData before = inventory.CurrentWeapon;
+                inventory.SelectSlot(i + 1);
+                if (inventory.CurrentWeapon != before) TutorialManager.Notify(TutorialAction.SwitchWeapon);
+            }
+
+            if (inventory.HasWeapon && Time.time >= nextShootTime)
+            {
+                Vector2 direction = ShootDirection();
+                if (direction != Vector2.zero) Shoot(direction, inventory.CurrentWeapon);
             }
         }
 
-        // rilascio del tasto del salto
-        if (Released(jumpAction))
-            isJumping = false;
-
-        // Cambio arma con le azioni Weapon1, Weapon2, ... (solo tra quelle già raccolte)
-        if (InventoryManager.Instance != null)
-        {
-            for (int i = 0; i < weaponActions.Count; i++)
-            {
-                if (Pressed(weaponActions[i]))
-                {
-                    WeaponData before = InventoryManager.Instance.CurrentWeapon;
-                    InventoryManager.Instance.SelectSlot(i + 1);
-
-                    // conta per il tutorial solo se l'arma è cambiata davvero
-                    if (InventoryManager.Instance.CurrentWeapon != before)
-                        TutorialManager.Notify(TutorialAction.SwitchWeapon);
-                }
-            }
-        }
-
-        // Sparo (solo se l'arma è stata raccolta)
-        // tenendo premuto continua a sparare, un colpo ogni ShootCooldown secondi
-        bool hasWeapon = InventoryManager.Instance != null && InventoryManager.Instance.HasWeapon;
-
-        if (hasWeapon && Time.time >= nextShootTime)
-        {
-            float forward = facingRight ? 1f : -1f;   // le diagonali sparano verso dove è girato il player
-            bool diagonalModifier = Held(shootDiagonalModifierAction);
-
-            // modificatore (es. Ctrl) + su / giù = diagonale in avanti
-            if (diagonalModifier && Held(shootUpAction)) Shoot(new Vector2(forward, 1f).normalized);
-            else if (diagonalModifier && Held(shootDownAction)) Shoot(new Vector2(forward, -1f).normalized);
-            else if (Held(shootRightAction)) Shoot(Vector2.right);
-            else if (Held(shootLeftAction)) Shoot(Vector2.left);
-            else if (Held(shootUpAction)) Shoot(Vector2.up);
-            else if (Held(shootDownAction)) Shoot(Vector2.down);
-            else if (Held(shootDiagonalUpAction)) Shoot(new Vector2(forward, 1f).normalized);
-            else if (Held(shootDiagonalDownAction)) Shoot(new Vector2(forward, -1f).normalized);
-        }
         animator.SetFloat("Speed", Mathf.Abs(h));
         animator.SetBool("IsGrounded", isGrounded);
     }
 
-    void Shoot(Vector2 dir)
+    Vector2 GroundPlatformVelocity()
+    {
+        if (!isGrounded) return Vector2.zero;
+        foreach (Collider2D hit in groundHits)
+        {
+            Platform platform = hit.GetComponentInParent<Platform>();
+            if (platform != null && platform.IsMoving) return platform.Velocity;
+        }
+        return Vector2.zero;
+    }
+
+    Vector2 ShootDirection()
+    {
+        float forward = facingRight ? 1f : -1f;
+        Vector2 diagonalUp = new Vector2(forward, 1f).normalized;
+        Vector2 diagonalDown = new Vector2(forward, -1f).normalized;
+        bool modifier = Held(shootDiagonal);   // es. Ctrl + su / giù
+
+        if (modifier && Held(shootUp)) return diagonalUp;
+        if (modifier && Held(shootDown)) return diagonalDown;
+        if (Held(shootRight)) return Vector2.right;
+        if (Held(shootLeft)) return Vector2.left;
+        if (Held(shootUp)) return Vector2.up;
+        if (Held(shootDown)) return Vector2.down;
+        if (Held(shootDiagonalUp)) return diagonalUp;
+        if (Held(shootDiagonalDown)) return diagonalDown;
+        return Vector2.zero;
+    }
+
+    void Shoot(Vector2 direction, WeaponData weapon)
     {
         nextShootTime = Time.time + ShootCooldown;
 
-        Vector3 spawnPos = transform.position + (Vector3)(dir * SpawnOffset);
-        GameObject bullet = Instantiate(Bullet, spawnPos, Quaternion.identity);
-
+        GameObject bullet = Instantiate(Bullet, transform.position + (Vector3)(direction * SpawnOffset), Quaternion.identity);
         BulletController bulletController = bullet.GetComponent<BulletController>();
-        bulletController.Direction = dir;
-
-        // aspetto, danno ed effetto sulle piattaforme dell'arma equipaggiata
-        bulletController.SetWeapon(InventoryManager.Instance.CurrentWeapon);
+        bulletController.Direction = direction;
+        bulletController.SetWeapon(weapon);
 
         AudioManager.Play(Sfx.Shoot);
         TutorialManager.Notify(TutorialAction.Shoot);
@@ -264,78 +185,53 @@ public class PlayerController : MonoBehaviour
 
     public void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.CompareTag("Enemy"))
-        {
-            Damaged(2, false, Sfx.EnemyHit);   // nemici: rispettano l'invincibilità
-        }
-
-        else if (other.CompareTag("Spike"))
-        {
-            Damaged(1, true, Sfx.SpikeHit);    // spike: danno immediato, nessuna attesa
-        }
-
-        else if (other.CompareTag("Exit"))
-        {
-            SceneManager.LoadScene(2);
-        }
+        if (other.CompareTag("Enemy")) Damaged(2, false, Sfx.EnemyHit);
+        else if (other.CompareTag("Spike")) Damaged(1, true, Sfx.SpikeHit);
+        else if (other.CompareTag("Exit")) SceneManager.LoadScene(2);
     }
 
     public void Damaged(int damage, bool ignoreInvincibility, Sfx hitSound)
     {
         if (!ignoreInvincibility)
         {
-            if (Time.time < Invincibility) return;   // ancora invulnerabile ai nemici
-            Invincibility = Time.time + InvincibilityTime;
+            if (Time.time < invincibleUntil) return;
+            invincibleUntil = Time.time + InvincibilityTime;
         }
 
-        // dopo il controllo dell'invincibilità: lampeggia solo se il danno arriva davvero
         isDamaged = true;
-
         health -= damage;
-
-        UpdateHealthUI();   // aggiorna le icone nello stesso istante del danno
+        UpdateHealthUI();
         AudioManager.Play(hitSound);
-        print("Damage taken");
-        print("HP: " + health);
 
         if (health <= 0)
             SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
-    // crea un'icona per ogni vita, duplicando la prima
     void CreateHealthIcons()
     {
-        if (HealthIconTemplate == null)
-        {
-            Debug.LogError("PlayerController: the Health Icon Template field is empty!");
-            return;
-        }
-
-        if (MaxHealth <= 0) return;
+        if (HealthIconTemplate == null || MaxHealth <= 0) return;
 
         healthIcons = new Image[MaxHealth];
         healthIcons[0] = HealthIconTemplate;
-
         for (int i = 1; i < MaxHealth; i++)
             healthIcons[i] = Instantiate(HealthIconTemplate, HealthIconTemplate.transform.parent);
     }
 
-    // le prime "health" icone sono piene, le altre vuote
     void UpdateHealthUI()
     {
         if (healthIcons == null) return;
-
         for (int i = 0; i < healthIcons.Length; i++)
             healthIcons[i].sprite = i < health ? FullHeartSprite : EmptyHeartSprite;
     }
 
-    // Opzionale: Per vedere il raggio del sensore nella Scene View mentre lavori
+    static bool Pressed(InputAction action) => action != null && action.WasPressedThisFrame();
+    static bool Held(InputAction action) => action != null && action.IsPressed();
+    static bool Released(InputAction action) => action != null && action.WasReleasedThisFrame();
+
     void OnDrawGizmosSelected()
     {
-        if (groundCheck != null)
-        {
-            Gizmos.color = Color.red;
-            Gizmos.DrawWireSphere(groundCheck.position, groundCheckRadius);
-        }
+        if (groundCheck == null) return;
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(groundCheck.position, groundCheckRadius);
     }
 }
