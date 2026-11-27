@@ -1367,7 +1367,7 @@ PrefabInstance:
       objectReference: {fileID: 1402135777}
     - target: {fileID: 3934883294990816679, guid: 6cbe551ab1ef7284dbf815339cef2b2d, type: 3}
       propertyPath: Speed
-      value: 8
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 3934883294990816679, guid: 6cbe551ab1ef7284dbf815339cef2b2d, type: 3}
       propertyPath: Healthbar
@@ -1375,7 +1375,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3934883294990816679, guid: 6cbe551ab1ef7284dbf815339cef2b2d, type: 3}
       propertyPath: JumpForce
-      value: 18
+      value: 15
       objectReference: {fileID: 0}
     - target: {fileID: 3934883294990816679, guid: 6cbe551ab1ef7284dbf815339cef2b2d, type: 3}
       propertyPath: MaxHealth
@@ -1385,6 +1385,10 @@ PrefabInstance:
       propertyPath: HealthIcon
       value: 
       objectReference: {fileID: 448142380}
+    - target: {fileID: 3934883294990816679, guid: 6cbe551ab1ef7284dbf815339cef2b2d, type: 3}
+      propertyPath: MaxJumpTime
+      value: 0.18
+      objectReference: {fileID: 0}
     - target: {fileID: 3934883294990816679, guid: 6cbe551ab1ef7284dbf815339cef2b2d, type: 3}
       propertyPath: SpawnOffset
       value: 0.3
