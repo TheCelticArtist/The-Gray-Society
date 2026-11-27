@@ -1263,11 +1263,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1313482136}
   m_CullTransparentMesh: 1
---- !u!1 &1402135777 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 6894095242912444913, guid: 7b64d6d987617d9478c8ed3a730ef13d, type: 3}
-  m_PrefabInstance: {fileID: 715934920}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &1411848143
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1353,25 +1348,13 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 374990244008824918, guid: 6cbe551ab1ef7284dbf815339cef2b2d, type: 3}
-      propertyPath: m_Sprite
-      value: 
-      objectReference: {fileID: 1898900651337613851, guid: afd23a7ff277f2f41883a66ada596a13, type: 3}
     - target: {fileID: 1275902447269323768, guid: 6cbe551ab1ef7284dbf815339cef2b2d, type: 3}
       propertyPath: m_Points.m_Paths.Array.data[0].Array.data[6].x
       value: 0.34250602
       objectReference: {fileID: 0}
     - target: {fileID: 3934883294990816679, guid: 6cbe551ab1ef7284dbf815339cef2b2d, type: 3}
-      propertyPath: Exit
-      value: 
-      objectReference: {fileID: 1402135777}
-    - target: {fileID: 3934883294990816679, guid: 6cbe551ab1ef7284dbf815339cef2b2d, type: 3}
       propertyPath: Speed
       value: 10
-      objectReference: {fileID: 0}
-    - target: {fileID: 3934883294990816679, guid: 6cbe551ab1ef7284dbf815339cef2b2d, type: 3}
-      propertyPath: Healthbar
-      value: 
       objectReference: {fileID: 0}
     - target: {fileID: 3934883294990816679, guid: 6cbe551ab1ef7284dbf815339cef2b2d, type: 3}
       propertyPath: JumpForce
@@ -1381,10 +1364,6 @@ PrefabInstance:
       propertyPath: MaxHealth
       value: 6
       objectReference: {fileID: 0}
-    - target: {fileID: 3934883294990816679, guid: 6cbe551ab1ef7284dbf815339cef2b2d, type: 3}
-      propertyPath: HealthIcon
-      value: 
-      objectReference: {fileID: 448142380}
     - target: {fileID: 3934883294990816679, guid: 6cbe551ab1ef7284dbf815339cef2b2d, type: 3}
       propertyPath: MaxJumpTime
       value: 0.18
@@ -1480,38 +1459,8 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 4967013331114250331, guid: 6cbe551ab1ef7284dbf815339cef2b2d, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1441742449}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 6cbe551ab1ef7284dbf815339cef2b2d, type: 3}
---- !u!1 &1441742447 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 4967013331114250331, guid: 6cbe551ab1ef7284dbf815339cef2b2d, type: 3}
-  m_PrefabInstance: {fileID: 1441742446}
-  m_PrefabAsset: {fileID: 0}
---- !u!212 &1441742448 stripped
-SpriteRenderer:
-  m_CorrespondingSourceObject: {fileID: 374990244008824918, guid: 6cbe551ab1ef7284dbf815339cef2b2d, type: 3}
-  m_PrefabInstance: {fileID: 1441742446}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &1441742449
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1441742447}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4c2e2418e5b976f479ec31d08f83d33b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DmgFilter
-  Victim: {fileID: 1441742447}
-  DmgColor: {fileID: 1441742448}
-  DmgTime: 1
-  BlinkInterval: 0.1
-  FlashColor: {r: 1, g: 0.57299995, b: 0.57299995, a: 0.54509807}
 --- !u!1001 &1447834228
 PrefabInstance:
   m_ObjectHideFlags: 0

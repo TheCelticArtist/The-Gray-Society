@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 3934883294990816679}
   - component: {fileID: 6626323181820572158}
   - component: {fileID: 1275902447269323768}
+  - component: {fileID: 5659240320060946821}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -31,7 +32,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -7.49, y: -2.573, z: 0}
-  m_LocalScale: {x: 1.0873063, y: 1.0873063, z: 1.0873063}
+  m_LocalScale: {x: 1.8408095, y: 1.8408095, z: 1.8408095}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 8923222759825788595}
@@ -112,7 +113,7 @@ Rigidbody2D:
   m_Mass: 1
   m_LinearDamping: 0
   m_AngularDamping: 0.05
-  m_GravityScale: 2.5
+  m_GravityScale: 4
   m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
@@ -136,19 +137,24 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b0413e38d114e924481aba9a5ca060d9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerController
-  Speed: 2
-  JumpForce: 8
-  MaxJumpTime: 0.25
-  MaxHealth: 3
+  Speed: 10
+  JumpForce: 15
+  MaxJumpTime: 0.18
+  MaxHealth: 6
   InvincibilityTime: 3
+  HealthIconTemplate: {fileID: 0}
+  FullHeartSprite: {fileID: -5400277420020209584, guid: 8a8ff7b946ce247408d2b51581f72e50, type: 3}
+  EmptyHeartSprite: {fileID: 4403737213303778286, guid: 77588a1a0f764b14db2dd7ea5d719a2e, type: 3}
   Bullet: {fileID: 930116036488164324, guid: ac16c59bc3e623440a7a50da931bb976, type: 3}
-  ShootCooldown: 1
-  SpawnOffset: 0.7
+  ShootCooldown: 0.1
+  SpawnOffset: 0.3
+  ShootPoseTime: 0.25
   groundCheck: {fileID: 8923222759825788595}
-  groundCheckRadius: 0.2
+  groundCheckRadius: 0.639
   groundLayer:
     serializedVersion: 2
     m_Bits: 8
+  isDamaged: 0
 --- !u!95 &6626323181820572158
 Animator:
   serializedVersion: 7
@@ -223,8 +229,25 @@ PolygonCollider2D:
       - {x: -0.45000002, y: 0.4666667}
       - {x: -0.45000002, y: -0.43333337}
       - {x: -0.38333336, y: -0.53333336}
-      - {x: 0.45000002, y: -0.53333336}
+      - {x: 0.34250602, y: -0.53333336}
   m_UseDelaunayMesh: 1
+--- !u!114 &5659240320060946821
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4967013331114250331}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c2e2418e5b976f479ec31d08f83d33b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DmgFilter
+  Victim: {fileID: 4967013331114250331}
+  DmgColor: {fileID: 374990244008824918}
+  DmgTime: 1
+  BlinkInterval: 0.1
+  FlashColor: {r: 1, g: 0.57299995, b: 0.57299995, a: 0.54509807}
 --- !u!1 &8782385339030537260
 GameObject:
   m_ObjectHideFlags: 0
@@ -250,7 +273,7 @@ Transform:
   m_GameObject: {fileID: 8782385339030537260}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: -0.538, z: 0}
+  m_LocalPosition: {x: -0.015, y: -0.538, z: 0}
   m_LocalScale: {x: 2.8243, y: 2.8243, z: 2.8243}
   m_ConstrainProportionsScale: 0
   m_Children: []
