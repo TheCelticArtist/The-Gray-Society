@@ -154,7 +154,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BulletController
   Speed: 20
-  Lifetime: 5
+  Lifetime: 0.5
+  rotateWithDirection: 1
   spriteAngleOffset: 0
   Direction: {x: 1, y: 0}
 --- !u!50 &-4167918382735355741

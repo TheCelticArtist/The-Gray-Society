@@ -2,7 +2,9 @@ using UnityEngine;
 
 public class BulletController : MonoBehaviour
 {
+    [Tooltip("Units per second")]
     [SerializeField] float Speed;
+    [Tooltip("Seconds before the bullet disappears if it hits nothing")]
     [SerializeField] float Lifetime;
     [Tooltip("Turn the sprite toward the shot direction. Disable it for round bullets that must look the same in every direction")]
     [SerializeField] bool rotateWithDirection = true;

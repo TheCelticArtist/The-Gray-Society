@@ -1723,7 +1723,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3934883294990816679, guid: 6cbe551ab1ef7284dbf815339cef2b2d, type: 3}
       propertyPath: ShootCooldown
-      value: 0.1
+      value: 0.4
       objectReference: {fileID: 0}
     - target: {fileID: 3934883294990816679, guid: 6cbe551ab1ef7284dbf815339cef2b2d, type: 3}
       propertyPath: FullHeartSprite
@@ -2746,6 +2746,18 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 1255768462023576648, guid: 1639494d38e57dd4c92b2fa97d32031f, type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 784682d8c59d650418686836c8942e31, type: 3}
+    - target: {fileID: 1255768462023576648, guid: 1639494d38e57dd4c92b2fa97d32031f, type: 3}
+      propertyPath: m_WasSpriteAssigned
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2750314376423662427, guid: 1639494d38e57dd4c92b2fa97d32031f, type: 3}
+      propertyPath: inventoryIcon
+      value: 
+      objectReference: {fileID: 21300000, guid: 784682d8c59d650418686836c8942e31, type: 3}
     - target: {fileID: 2750314376423662427, guid: 1639494d38e57dd4c92b2fa97d32031f, type: 3}
       propertyPath: platformEffect
       value: 2

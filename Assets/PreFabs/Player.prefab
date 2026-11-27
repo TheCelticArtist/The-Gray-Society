@@ -146,7 +146,7 @@ MonoBehaviour:
   FullHeartSprite: {fileID: -5400277420020209584, guid: 8a8ff7b946ce247408d2b51581f72e50, type: 3}
   EmptyHeartSprite: {fileID: 4403737213303778286, guid: 77588a1a0f764b14db2dd7ea5d719a2e, type: 3}
   Bullet: {fileID: 930116036488164324, guid: ac16c59bc3e623440a7a50da931bb976, type: 3}
-  ShootCooldown: 0.1
+  ShootCooldown: 0.4
   SpawnOffset: 0.3
   ShootPoseTime: 0.25
   groundCheck: {fileID: 8923222759825788595}

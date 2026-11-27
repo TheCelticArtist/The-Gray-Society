@@ -6,6 +6,16 @@ using UnityEngine.UI;
 
 public class PlayerController : MonoBehaviour
 {
+    [System.Serializable]
+    public class HandPoints
+    {
+        public Transform side;
+        public Transform up;
+        public Transform down;
+        public Transform diagonalUp;
+        public Transform diagonalDown;
+    }
+
     [Header("Movement")]
     [SerializeField] float Speed;
     [SerializeField] float JumpForce;
@@ -25,10 +35,16 @@ public class PlayerController : MonoBehaviour
     [SerializeField] GameObject Bullet;
     [Tooltip("Seconds between one shot and the next (also while holding the shoot key)")]
     [SerializeField] float ShootCooldown = 5;
-    [Tooltip("Distance from the player where the bullet spawns")]
+    [Tooltip("Distance from the player where the bullet spawns when no hand point is set for that pose")]
     [SerializeField] float SpawnOffset = 0.7f;
     [Tooltip("Seconds the shooting pose stays after releasing the shoot key (so it shows even on a quick tap)")]
     [SerializeField] float ShootPoseTime = 0.25f;
+
+    [Header("Hand Points (children of the Player, placed with the Player facing right)")]
+    [Tooltip("Where the bullet spawns for each shooting pose on the ground. Empty = Spawn Offset along the shot")]
+    [SerializeField] HandPoints groundHands;
+    [Tooltip("Where the bullet spawns for each jump shooting pose. Empty = the ground point is used")]
+    [SerializeField] HandPoints airHands;
 
     [Header("Ground Check")]
     [SerializeField] Transform groundCheck;
@@ -164,6 +180,30 @@ public class PlayerController : MonoBehaviour
         return direction.y > 0f ? 4 : 5;
     }
 
+    Vector3 SpawnPosition(Vector2 direction)
+    {
+        Transform hand = isGrounded ? null : HandFor(airHands, direction);
+        if (hand == null) hand = HandFor(groundHands, direction);
+        if (hand == null) return transform.position + (Vector3)(direction * SpawnOffset);
+
+        Vector3 local = transform.InverseTransformPoint(hand.position);
+        if (!facingRight) local.x = -local.x;
+        return transform.TransformPoint(local);
+    }
+
+    static Transform HandFor(HandPoints hands, Vector2 direction)
+    {
+        if (hands == null) return null;
+        switch (ShootPose(direction))
+        {
+            case 1: return hands.side;
+            case 2: return hands.up;
+            case 3: return hands.down;
+            case 4: return hands.diagonalUp;
+            default: return hands.diagonalDown;
+        }
+    }
+
     Vector2 GroundPlatformVelocity()
     {
         if (!isGrounded) return Vector2.zero;
@@ -197,7 +237,7 @@ public class PlayerController : MonoBehaviour
     {
         nextShootTime = Time.time + ShootCooldown;
 
-        GameObject bullet = Instantiate(Bullet, transform.position + (Vector3)(direction * SpawnOffset), Quaternion.identity);
+        GameObject bullet = Instantiate(Bullet, SpawnPosition(direction), Quaternion.identity);
         BulletController bulletController = bullet.GetComponent<BulletController>();
         bulletController.Direction = direction;
         bulletController.SetWeapon(weapon);
