@@ -139,7 +139,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 0.95, y: 0.48}
+  m_Size: {x: 0.95, y: 0.43}
   m_EdgeRadius: 0
 --- !u!61 &7003245967062707976
 BoxCollider2D:
@@ -185,7 +185,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 0.95, y: 0.48}
+  m_Size: {x: 0.95, y: 0.43}
   m_EdgeRadius: 0
 --- !u!114 &320757494869641109
 MonoBehaviour:
@@ -210,6 +210,9 @@ MonoBehaviour:
   extendMultiplier: 2
   extendSide: 0
   extendDuration: 0.3
+  extraBlockingLayers:
+    serializedVersion: 2
+    m_Bits: 0
   movingSprite: {fileID: 0}
   moveOffset: {x: 3, y: 0}
   moveDuration: 2
