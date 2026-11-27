@@ -27,6 +27,8 @@ public class PlayerController : MonoBehaviour
     [SerializeField] float ShootCooldown = 5;
     [Tooltip("Distance from the player where the bullet spawns")]
     [SerializeField] float SpawnOffset = 0.7f;
+    [Tooltip("Seconds the shooting pose stays after releasing the shoot key (so it shows even on a quick tap)")]
+    [SerializeField] float ShootPoseTime = 0.25f;
 
     [Header("Ground Check")]
     [SerializeField] Transform groundCheck;
@@ -34,6 +36,8 @@ public class PlayerController : MonoBehaviour
     [SerializeField] LayerMask groundLayer;
 
     public bool isDamaged;
+
+    const string ShootDirectionParam = "ShootDirection";
 
     InputAction move, jump, shootUp, shootDown, shootLeft, shootRight, shootDiagonal, shootDiagonalUp, shootDiagonalDown;
     readonly InputAction[] weaponKeys = new InputAction[9];
@@ -46,14 +50,16 @@ public class PlayerController : MonoBehaviour
     readonly List<Collider2D> groundHits = new List<Collider2D>();
 
     int health;
-    float invincibleUntil, nextShootTime, jumpTimer;
-    bool isJumping, isGrounded, facingRight = true;
+    float invincibleUntil, nextShootTime, jumpTimer, shootPoseUntil;
+    bool isJumping, isGrounded, facingRight = true, hasShootDirectionParam;
+    Vector2 lastShootDirection;
 
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
         spriteRenderer = GetComponent<SpriteRenderer>();
         animator = GetComponent<Animator>();
+        hasShootDirectionParam = System.Array.Exists(animator.parameters, p => p.name == ShootDirectionParam);
         health = MaxHealth;
         CreateHealthIcons();
         UpdateHealthUI();
@@ -90,8 +96,7 @@ public class PlayerController : MonoBehaviour
         float h = Mathf.Abs(x) > 0.2f ? Mathf.Sign(x) : 0f;
         if (h != 0)
         {
-            facingRight = h > 0;
-            spriteRenderer.flipX = !facingRight;
+            Face(h > 0);
             TutorialManager.Notify(TutorialAction.Move);
         }
 
@@ -130,15 +135,33 @@ public class PlayerController : MonoBehaviour
                 if (inventory.CurrentWeapon != before) TutorialManager.Notify(TutorialAction.SwitchWeapon);
             }
 
-            if (inventory.HasWeapon && Time.time >= nextShootTime)
+            Vector2 direction = inventory.HasWeapon ? ShootDirection() : Vector2.zero;
+            if (direction != Vector2.zero)
             {
-                Vector2 direction = ShootDirection();
-                if (direction != Vector2.zero) Shoot(direction, inventory.CurrentWeapon);
+                if (direction.y == 0f) Face(direction.x > 0f);
+                lastShootDirection = direction;
+                shootPoseUntil = Time.time + ShootPoseTime;
+                if (Time.time >= nextShootTime) Shoot(direction, inventory.CurrentWeapon);
             }
         }
 
         animator.SetFloat("Speed", Mathf.Abs(h));
         animator.SetBool("IsGrounded", isGrounded);
+        if (hasShootDirectionParam)
+            animator.SetInteger(ShootDirectionParam, Time.time < shootPoseUntil ? ShootPose(lastShootDirection) : 0);
+    }
+
+    void Face(bool right)
+    {
+        facingRight = right;
+        spriteRenderer.flipX = !right;
+    }
+
+    static int ShootPose(Vector2 direction)
+    {
+        if (direction.y == 0f) return 1;
+        if (direction.x == 0f) return direction.y > 0f ? 2 : 3;
+        return direction.y > 0f ? 4 : 5;
     }
 
     Vector2 GroundPlatformVelocity()
@@ -157,7 +180,7 @@ public class PlayerController : MonoBehaviour
         float forward = facingRight ? 1f : -1f;
         Vector2 diagonalUp = new Vector2(forward, 1f).normalized;
         Vector2 diagonalDown = new Vector2(forward, -1f).normalized;
-        bool modifier = Held(shootDiagonal);   // es. Ctrl + su / giù
+        bool modifier = Held(shootDiagonal);
 
         if (modifier && Held(shootUp)) return diagonalUp;
         if (modifier && Held(shootDown)) return diagonalDown;
