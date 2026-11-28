@@ -20,6 +20,7 @@ public class PauseMenu : MonoBehaviour
 
     [Header("Buttons")]
     [SerializeField] Button resumeButton;
+    [SerializeField] Button restartLevelButton;
     [SerializeField] Button optionsButton;
     [Tooltip("The Back button inside the Options panel")]
     [SerializeField] Button optionsBackButton;
@@ -39,6 +40,7 @@ public class PauseMenu : MonoBehaviour
         pauseRoot.SetActive(false);
 
         Bind(resumeButton, Resume);
+        Bind(restartLevelButton, RestartLevel);
         Bind(optionsButton, OpenOptions);
         Bind(optionsBackButton, CloseOptions);
         Bind(mainMenuButton, GoToMainMenu);
@@ -98,6 +100,21 @@ public class PauseMenu : MonoBehaviour
         Time.timeScale = paused ? 0f : 1f;
         if (paused) AudioManager.PauseMusic();
         else AudioManager.ResumeMusic();
+    }
+
+    void RestartLevel()
+    {
+        pausePanel.SetActive(false);
+        IsPaused = false;
+
+        void onBeforeRender()
+        {
+            Application.onBeforeRender -= onBeforeRender;
+            AudioManager.ResumeMusic();
+        }
+        Application.onBeforeRender -= onBeforeRender;
+        if (InventoryManager.Instance != null) InventoryManager.Instance.ResetForLevel(SceneManager.GetActiveScene().buildIndex);
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
     void OpenOptions()

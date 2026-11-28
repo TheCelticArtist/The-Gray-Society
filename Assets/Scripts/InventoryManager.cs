@@ -119,4 +119,21 @@ public class InventoryManager : MonoBehaviour
             if (slotFrames[i] != null)
                 slotFrames[i].color = i == currentSlot ? selectedSlotColor : normalSlotColor;
     }
+
+    public void ResetForLevel(int levelBuildIndex)
+    {
+        for (int i = Mathf.Max(0, levelBuildIndex - 1); i < weapons.Length; i++)
+        {
+            weapons[i] = null;
+
+            Image slot = weaponSlots[i];
+            if (slot != null) slot.enabled = false;
+        }
+        
+        currentSlot = -1;
+        for (int i = weapons.Length - 1; i >= 0; i--)
+            if (weapons[i] != null) { currentSlot = i; break; }
+
+        UpdateHighlight();
+    }
 }

@@ -52,6 +52,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] LayerMask groundLayer;
 
     public bool isDamaged;
+    public bool isDead;
 
     const string ShootDirectionParam = "ShootDirection";
 
@@ -255,6 +256,7 @@ public class PlayerController : MonoBehaviour
 
     public void Damaged(int damage, bool ignoreInvincibility, Sfx hitSound)
     {
+        if (isDead) return;
         if (!ignoreInvincibility)
         {
             if (Time.time < invincibleUntil) return;
@@ -266,10 +268,17 @@ public class PlayerController : MonoBehaviour
         UpdateHealthUI();
         AudioManager.Play(hitSound);
 
-        if (health <= 0)
-            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        if (health <= 0) Dead();
     }
+    void Dead()
+    {
+        if (isDead) return;
+        isDead = true;
+        if (InventoryManager.Instance != null)
+            InventoryManager.Instance.ResetForLevel(SceneManager.GetActiveScene().buildIndex);
 
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+    }
     void CreateHealthIcons()
     {
         if (HealthIconTemplate == null || MaxHealth <= 0) return;
